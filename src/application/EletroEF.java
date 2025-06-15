@@ -20,31 +20,49 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 
+/**
+ * Main JavaFX application for interactive finite element simulation of electrostatic fields.
+ * 
+ * This class manages the UI for point placement, triangulation, and field visualization.
+ * It allows the user to add points, lines, or circles, trigger triangulation, and 
+ * toggle the display of field vectors and triangles. Triangulation and vector field
+ * visualization are handled via the Triangulacao class.
+ */
 public class EletroEF extends Application {
 
+    // Triangulation object for current state
     Triangulacao triangulacaoObj;
-    CheckBox checkbox1;
-    CheckBox checkbox2;
-    TextField tf1;
+    // UI controls
+    CheckBox checkbox1; // Draw field vectors
+    CheckBox checkbox2; // Draw triangles
+    TextField tf1;      // Text field for point value input
+    // Arrays for points and their graphical representations
     Ponto[] arrPontos = new Ponto[20000];
     Circle[] arrCircle = new Circle[1000];
     int i=0;
-    int numeroPontosAtual=0;
+    int numeroPontosAtual=0; // Number of points currently on screen
 
+    // Variables for mouse drawing logic
     double inicio_linha_x = 0;
     double inicio_linha_y = 0;
-    boolean existeTriangulacao = false;
+    boolean existeTriangulacao = false; // Not used, but intended to track triangulation state
+
+    // Example enum (not used in logic)
     enum Abacaxi {Feio , Doce, amrgo};
     Abacaxi baxi = Abacaxi.Feio;
 
+    /**
+     * JavaFX entry point. Builds the UI and sets up all event handlers.
+     */
     @Override  
     public void start(Stage primarystage) {
         final double PI = 3.14159265358979323846;
 
+        // Main layout: BorderPane with drawing area center and controls on right
         BorderPane rootPane = new BorderPane();
         Scene scene = new Scene(rootPane, 1000, 600);
 
-        // --- Drawing area --- //
+        // --- Drawing area setup --- //
         Group drawingGroup = new Group();
         Rectangle areaDesenho = new Rectangle();
         areaDesenho.setX(0);
@@ -55,7 +73,7 @@ public class EletroEF extends Application {
         drawingGroup.getChildren().add(areaDesenho);
         rootPane.setCenter(drawingGroup);
 
-        // Make areaDesenho dynamically resize with window
+        // Make drawing area resize with window (minus controls VBox width)
         rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             double width = newVal.doubleValue();
             areaDesenho.setWidth(Math.max(0, width - 200)); // 200px for control VBox
@@ -65,22 +83,26 @@ public class EletroEF extends Application {
             areaDesenho.setHeight(height);
         });
 
-        // --- Controls VBox --- //
+        // --- Controls VBox setup --- //
         VBox controls = new VBox(10);
         controls.setPadding(new Insets(10));
         controls.setPrefWidth(200);
 
+        // Button: Start Triangulation
         Button btn1 = new Button("Start Triangulation");
         btn1.setMaxWidth(Double.MAX_VALUE);
         btn1.setOnAction(arg0 -> {
+            // Remove previous triangulation if any
             System.out.println("hello world motherfucker");
             if(triangulacaoObj!=null) {
                 Triangulacao.deletartriangulos(drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm);
                 Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
             }
+            // Create new triangulation object
             triangulacaoObj = new Triangulacao(drawingGroup, arrPontos, numeroPontosAtual, checkbox1, checkbox2);
         });
 
+        // Button: Delete all points except initial 3
         Button btn2 = new Button("Delete all points");
         btn2.setMaxWidth(Double.MAX_VALUE);
         btn2.setOnAction(arg0 -> {
@@ -95,6 +117,7 @@ public class EletroEF extends Application {
             numeroPontosAtual=3;
         });
 
+        // Button: Delete last point
         Button btn3 = new Button("Delete last point");
         btn3.setMaxWidth(Double.MAX_VALUE);
         btn3.setOnAction(arg0 -> {
@@ -104,16 +127,19 @@ public class EletroEF extends Application {
             }
         });
 
+        // Field vector and triangle display toggles
         checkbox1 = new CheckBox("Draw Field Vectors");
         checkbox1.setSelected(true);
 
         checkbox2 = new CheckBox("Draw Triangles");
         checkbox2.setSelected(true);
 
+        // Drawing mode toggles: add points, add line of points, add circle of points
         CheckBox checkbox3 = new CheckBox("Add Points");
         CheckBox checkbox4 = new CheckBox("Add Line");
         CheckBox checkbox5 = new CheckBox("Add Circle");
 
+        // Point value input
         tf1 = new TextField("200");
 
         // Add controls to VBox
@@ -121,7 +147,9 @@ public class EletroEF extends Application {
 
         rootPane.setRight(controls);
 
-        // Event handlers for checkboxes -- unchanged logic, only target drawingGroup now
+        // --- Controls event handlers --- //
+
+        // Toggle display of field vectors
         checkbox1.setOnAction(arg0 -> {
             if ((checkbox1.isSelected())&&(triangulacaoObj!=null)){
                 Triangulacao.desenharVetores(triangulacaoObj.arrTriangulosNorm, triangulacaoObj.E, triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
@@ -129,6 +157,7 @@ public class EletroEF extends Application {
                 Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
             }
         });
+        // Toggle display of triangles
         checkbox2.setOnAction(arg0 -> {
             if ((checkbox2.isSelected())&&(triangulacaoObj!=null)) {
                 Triangulacao.desenhartriangulos(triangulacaoObj.arrTriangulosNorm, drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm );
@@ -136,6 +165,7 @@ public class EletroEF extends Application {
                 Triangulacao.deletartriangulos(drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm);
             }
         });
+        // Mutually exclusive checkboxes for drawing modes
         checkbox3.setOnAction(arg0 -> {
             if ((checkbox4.isSelected())) checkbox4.setSelected(false);
             if ((checkbox5.isSelected())) checkbox5.setSelected(false);
@@ -149,12 +179,16 @@ public class EletroEF extends Application {
             if ((checkbox3.isSelected())) checkbox3.setSelected(false);
         });
 
-        // --- Drawing & mouse logic --- //
+        // --- Drawing initialization --- //
+        // The first 3 points are initialized for the triangulation base
         arrPontos[0] = new Ponto(0,0);
         arrPontos[1] = new Ponto(2000,0);
         arrPontos[2] = new Ponto(0,2000);
         numeroPontosAtual = 3;
 
+        // --- Mouse event handlers for adding points/lines/circles --- //
+
+        // Add single point at click
         areaDesenho.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
             if(checkbox3.isSelected()){
                 if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
@@ -173,6 +207,7 @@ public class EletroEF extends Application {
             }
         });
 
+        // Store start of line/circle for mouse drag
         areaDesenho.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
             if(checkbox4.isSelected()||checkbox5.isSelected()){
                 System.out.println("mouse click detected! " + mouseEvent.getX()+" "+ mouseEvent.getY());
@@ -181,6 +216,7 @@ public class EletroEF extends Application {
             }
         });
 
+        // On mouse release, add line or circle of points
         areaDesenho.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseEvent -> {
             double x, y, dist;
             double n = 0;
@@ -188,6 +224,7 @@ public class EletroEF extends Application {
             y = mouseEvent.getY()-inicio_linha_y;
             dist = Math.sqrt(Math.pow(x, 2)+Math.pow(y, 2));
 
+            // Add line of points
             if(checkbox4.isSelected()){
                 x = mouseEvent.getX()-inicio_linha_x;
                 y = mouseEvent.getY()-inicio_linha_y;
@@ -213,6 +250,7 @@ public class EletroEF extends Application {
                 }
             }
 
+            // Add circle of points
             if(checkbox5.isSelected()){
                 double r;
                 r = dist;
@@ -241,11 +279,15 @@ public class EletroEF extends Application {
             }
         });
 
+        // Show the main window
         primarystage.setScene(scene);
         primarystage.setTitle("Electrostatics Finite Element Calculus");
         primarystage.show();  
     }  
 
+    /**
+     * Main entry point. Launches JavaFX application.
+     */
     public static void main(String[] args) {  
         launch(args);  
     }  
