@@ -19,15 +19,8 @@ import javafx.scene.shape.Circle;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.collections.ObservableList;
 
-/**
- * Main JavaFX application for interactive finite element simulation of electrostatic fields.
- * 
- * This class manages the UI for point placement, triangulation, and field visualization.
- * It allows the user to add points, lines, or circles, trigger triangulation, and 
- * toggle the display of field vectors and triangles. Triangulation and vector field
- * visualization are handled via the Triangulacao class.
- */
 public class EletroEF extends Application {
 
     // Triangulation object for current state
@@ -51,9 +44,10 @@ public class EletroEF extends Application {
     enum Abacaxi {Feio , Doce, amrgo};
     Abacaxi baxi = Abacaxi.Feio;
 
-    /**
-     * JavaFX entry point. Builds the UI and sets up all event handlers.
-     */
+    // Fields for dragging the whole scene
+    double lastDragX = 0;
+    double lastDragY = 0;
+
     @Override  
     public void start(Stage primarystage) {
         final double PI = 3.14159265358979323846;
@@ -214,6 +208,11 @@ public class EletroEF extends Application {
                 inicio_linha_x =  mouseEvent.getX();
                 inicio_linha_y =  mouseEvent.getY();
             }
+            // SCENE PAN: Store initial position if not in any drawing mode
+            if(!checkbox3.isSelected() && !checkbox4.isSelected() && !checkbox5.isSelected()) {
+                lastDragX = mouseEvent.getX();
+                lastDragY = mouseEvent.getY();
+            }
         });
 
         // On mouse release, add line or circle of points
@@ -276,6 +275,53 @@ public class EletroEF extends Application {
                         break;
                     }
                 }
+            }
+        });
+
+        // SCENE PAN: Move everything when not in drawing mode
+        areaDesenho.addEventFilter(MouseEvent.MOUSE_DRAGGED, mouseEvent -> {
+            if(!checkbox3.isSelected() && !checkbox4.isSelected() && !checkbox5.isSelected()) {
+                double dx = mouseEvent.getX() - lastDragX;
+                double dy = mouseEvent.getY() - lastDragY;
+
+                // Move points and circles
+                for (int idx = 0; idx < numeroPontosAtual; idx++) {
+                    arrPontos[idx].x += dx;
+                    arrPontos[idx].y += dy;
+                    arrCircle[idx].setCenterX(arrCircle[idx].getCenterX() + dx);
+                    arrCircle[idx].setCenterY(arrCircle[idx].getCenterY() + dy);
+                }
+
+                // Move triangulation polygons (triangles)
+                if (triangulacaoObj != null && triangulacaoObj.arrpolygono != null) {
+                    for (int i = 0; i < triangulacaoObj.numeroTriangulosNorm; i++) {
+                        Polygon poly = triangulacaoObj.arrpolygono[i];
+                        if (poly != null) {
+                            ObservableList<Double> points = poly.getPoints();
+                            for (int j = 0; j < points.size(); j += 2) {
+                                points.set(j, points.get(j) + dx);     // X
+                                points.set(j+1, points.get(j+1) + dy); // Y
+                            }
+                        }
+                    }
+                }
+
+                for (int i = 0; i < triangulacaoObj.arrVetorLinha.length; i++) {
+                    if (triangulacaoObj.arrVetorLinha[i] != null) {
+                        for (int j = 0; j < triangulacaoObj.arrVetorLinha[i].length; j++) {
+                            Line vec = triangulacaoObj.arrVetorLinha[i][j];
+                            if (vec != null) {
+                                vec.setStartX(vec.getStartX() + dx);
+                                vec.setStartY(vec.getStartY() + dy);
+                                vec.setEndX(vec.getEndX() + dx);
+                                vec.setEndY(vec.getEndY() + dy);
+                            }
+                        }
+                    }
+                }
+
+                lastDragX = mouseEvent.getX();
+                lastDragY = mouseEvent.getY();
             }
         });
 
