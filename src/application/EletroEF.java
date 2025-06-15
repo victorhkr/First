@@ -10,7 +10,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;  
 import javafx.stage.Stage;
 import quicksortpckg.QuickSort;  
-import javafx.scene.control.CheckBox;  
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.shape.Line;  
@@ -61,12 +62,20 @@ public class EletroEF extends Application {
         Rectangle areaDesenho = new Rectangle();
         areaDesenho.setX(0);
         areaDesenho.setY(0);
-        areaDesenho.setWidth(800);
-        areaDesenho.setHeight(600);
+        areaDesenho.setWidth(5000);
+        areaDesenho.setHeight(5000);
         areaDesenho.setFill(Color.GREY);
         drawingGroup.getChildren().add(areaDesenho);
-        rootPane.setCenter(drawingGroup);
-
+        
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(drawingGroup);
+        scrollPane.setPannable(true);
+        scrollPane.setPrefViewportWidth(800);
+        scrollPane.setPrefViewportHeight(600);
+        scrollPane.setHvalue(0.5);
+        scrollPane.setVvalue(0.5);
+        rootPane.setCenter(scrollPane);
+        
         // Make drawing area resize with window (minus controls VBox width)
         rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             double width = newVal.doubleValue();
@@ -286,13 +295,15 @@ public class EletroEF extends Application {
 
                 // Move points and circles
                 for (int idx = 0; idx < numeroPontosAtual; idx++) {
-                    arrPontos[idx].x += dx;
-                    arrPontos[idx].y += dy;
-                    arrCircle[idx].setCenterX(arrCircle[idx].getCenterX() + dx);
-                    arrCircle[idx].setCenterY(arrCircle[idx].getCenterY() + dy);
+                    if (arrCircle[idx] != null) {
+                        arrPontos[idx].x += dx;
+                        arrPontos[idx].y += dy;
+                        arrCircle[idx].setCenterX(arrCircle[idx].getCenterX() + dx);
+                        arrCircle[idx].setCenterY(arrCircle[idx].getCenterY() + dy);
+                    }
                 }
 
-                // Move triangulation polygons (triangles)
+             // Move triangulation polygons (triangles)
                 if (triangulacaoObj != null && triangulacaoObj.arrpolygono != null) {
                     for (int i = 0; i < triangulacaoObj.numeroTriangulosNorm; i++) {
                         Polygon poly = triangulacaoObj.arrpolygono[i];
@@ -306,15 +317,18 @@ public class EletroEF extends Application {
                     }
                 }
 
-                for (int i = 0; i < triangulacaoObj.arrVetorLinha.length; i++) {
-                    if (triangulacaoObj.arrVetorLinha[i] != null) {
-                        for (int j = 0; j < triangulacaoObj.arrVetorLinha[i].length; j++) {
-                            Line vec = triangulacaoObj.arrVetorLinha[i][j];
-                            if (vec != null) {
-                                vec.setStartX(vec.getStartX() + dx);
-                                vec.setStartY(vec.getStartY() + dy);
-                                vec.setEndX(vec.getEndX() + dx);
-                                vec.setEndY(vec.getEndY() + dy);
+                // Move field vector lines
+                if (triangulacaoObj != null && triangulacaoObj.arrVetorLinha != null) {
+                    for (int i = 0; i < triangulacaoObj.arrVetorLinha.length; i++) {
+                        if (triangulacaoObj.arrVetorLinha[i] != null) {
+                            for (int j = 0; j < triangulacaoObj.arrVetorLinha[i].length; j++) {
+                                Line vec = triangulacaoObj.arrVetorLinha[i][j];
+                                if (vec != null) {
+                                    vec.setStartX(vec.getStartX() + dx);
+                                    vec.setStartY(vec.getStartY() + dy);
+                                    vec.setEndX(vec.getEndX() + dx);
+                                    vec.setEndY(vec.getEndY() + dy);
+                                }
                             }
                         }
                     }
