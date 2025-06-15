@@ -259,17 +259,21 @@ public class EletroEF extends Application {
 			@Override
 			public void handle(MouseEvent mouseEvent) {
 				if(checkbox3.isSelected()){
-					System.out.println("mouse click detected! " + mouseEvent.getSceneX()+" "+ mouseEvent.getSceneY());
-					arrCircle[numeroPontosAtual]= new Circle();  
-					arrCircle[numeroPontosAtual].setCenterX(mouseEvent.getSceneX());  
-					arrCircle[numeroPontosAtual].setCenterY(mouseEvent.getSceneY());  
-					arrCircle[numeroPontosAtual].setRadius(2);  
-					arrCircle[numeroPontosAtual].setFill(Color.RED); 
-					root.getChildren().add(arrCircle[numeroPontosAtual]);
-					arrPontos[numeroPontosAtual] = new Ponto(mouseEvent.getSceneX(),mouseEvent.getSceneY(),Integer.parseInt(tf1.getText()));
-					numeroPontosAtual++;
-					System.out.println(numeroPontosAtual);
-
+					
+					if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
+					    arrCircle[numeroPontosAtual]= new Circle();  
+					    arrCircle[numeroPontosAtual].setCenterX(mouseEvent.getSceneX());  
+					    arrCircle[numeroPontosAtual].setCenterY(mouseEvent.getSceneY());  
+					    arrCircle[numeroPontosAtual].setRadius(2);  
+					    arrCircle[numeroPontosAtual].setFill(Color.RED); 
+					    root.getChildren().add(arrCircle[numeroPontosAtual]);
+					    arrPontos[numeroPontosAtual] = new Ponto(mouseEvent.getSceneX(),mouseEvent.getSceneY(),Integer.parseInt(tf1.getText()));
+					    numeroPontosAtual++;
+					    System.out.println(numeroPontosAtual);
+					} else {
+					    System.out.println("Maximum number of points reached!");
+					}
+					
 				}
 			}
 		});
@@ -309,19 +313,24 @@ public class EletroEF extends Application {
 					n = dist/5;
 
 					System.out.println("mouse click detected! " + x +" "+ y);
-
+					
 					for(i =0;i<n;i++){
-						arrCircle[numeroPontosAtual]= new Circle();
-						arrCircle[numeroPontosAtual].setCenterX(inicio_linha_x+5*i*x);
-						arrCircle[numeroPontosAtual].setCenterY(inicio_linha_y+5*i*y);
-						arrCircle[numeroPontosAtual].setRadius(2);
-						arrCircle[numeroPontosAtual].setFill(Color.RED);
-						root.getChildren().add(arrCircle[numeroPontosAtual]);
-						arrPontos[numeroPontosAtual] = new Ponto(inicio_linha_x+5*i*x,inicio_linha_y+5*i*y,Integer.parseInt(tf1.getText()));
-						numeroPontosAtual++;
-
-						System.out.println(numeroPontosAtual);
+					    if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
+					        arrCircle[numeroPontosAtual]= new Circle();
+					        arrCircle[numeroPontosAtual].setCenterX(inicio_linha_x+5*i*x);
+					        arrCircle[numeroPontosAtual].setCenterY(inicio_linha_y+5*i*y);
+					        arrCircle[numeroPontosAtual].setRadius(2);
+					        arrCircle[numeroPontosAtual].setFill(Color.RED);
+					        root.getChildren().add(arrCircle[numeroPontosAtual]);
+					        arrPontos[numeroPontosAtual] = new Ponto(inicio_linha_x+5*i*x,inicio_linha_y+5*i*y,Integer.parseInt(tf1.getText()));
+					        numeroPontosAtual++;
+					        System.out.println(numeroPontosAtual);
+					    } else {
+					        System.out.println("Maximum number of points reached!");
+					        break;
+					    }
 					}
+					
 				}
 
 				if(checkbox5.isSelected()){
@@ -330,22 +339,32 @@ public class EletroEF extends Application {
 					r = dist;
 					dist = 2*PI*r;
 					n = dist/5;
+					
+					
+					
+					
 					for(i =0;i<n;i++){
 
 						double centerX= inicio_linha_x+Math.cos(i*5/r)*x+Math.sin(i*5/r)*y;
 						double centerY= inicio_linha_y-Math.sin(i*5/r)*x+Math.cos(i*5/r)*y;
 
-						arrCircle[numeroPontosAtual]= new Circle();
-						arrCircle[numeroPontosAtual].setCenterX(centerX);
-						arrCircle[numeroPontosAtual].setCenterY(centerY);
-						arrCircle[numeroPontosAtual].setRadius(2);
-						arrCircle[numeroPontosAtual].setFill(Color.RED);
-						root.getChildren().add(arrCircle[numeroPontosAtual]);
-						arrPontos[numeroPontosAtual] = new Ponto(centerX,centerY,Integer.parseInt(tf1.getText()));
-						numeroPontosAtual++;
-						System.out.println(centerX);
-						System.out.println(centerY);
-						System.out.println(numeroPontosAtual);
+					    if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
+					        arrCircle[numeroPontosAtual]= new Circle();
+					        arrCircle[numeroPontosAtual].setCenterX(centerX);
+					        arrCircle[numeroPontosAtual].setCenterY(centerY);
+					        arrCircle[numeroPontosAtual].setRadius(2);
+					        arrCircle[numeroPontosAtual].setFill(Color.RED);
+					        root.getChildren().add(arrCircle[numeroPontosAtual]);
+					        arrPontos[numeroPontosAtual] = new Ponto(centerX,centerY,Integer.parseInt(tf1.getText()));
+					        numeroPontosAtual++;
+					        System.out.println(centerX);
+					        System.out.println(centerY);
+					        System.out.println(numeroPontosAtual);
+					    } else {
+					        System.out.println("Maximum number of points reached!");
+					        break;
+					    }
+	
 					}
 
 
