@@ -22,6 +22,10 @@ import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 import javafx.collections.ObservableList;
 
+// Add these imports for properties
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+
 public class EletroEF extends Application {
 
     // Triangulation object for current state
@@ -49,6 +53,10 @@ public class EletroEF extends Application {
     double lastDragX = 0;
     double lastDragY = 0;
 
+    // --- ADDED: Properties for areaDesenho size (for auto-expansion)
+    private DoubleProperty areaDesenhoWidth = new SimpleDoubleProperty(5000);
+    private DoubleProperty areaDesenhoHeight = new SimpleDoubleProperty(5000);
+
     @Override  
     public void start(Stage primarystage) {
         final double PI = 3.14159265358979323846;
@@ -62,8 +70,9 @@ public class EletroEF extends Application {
         Rectangle areaDesenho = new Rectangle();
         areaDesenho.setX(0);
         areaDesenho.setY(0);
-        areaDesenho.setWidth(5000);
-        areaDesenho.setHeight(5000);
+        // Bind width/height to properties for dynamic resizing
+        areaDesenho.widthProperty().bind(areaDesenhoWidth);
+        areaDesenho.heightProperty().bind(areaDesenhoHeight);
         areaDesenho.setFill(Color.GREY);
         drawingGroup.getChildren().add(areaDesenho);
         
@@ -79,11 +88,11 @@ public class EletroEF extends Application {
         // Make drawing area resize with window (minus controls VBox width)
         rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             double width = newVal.doubleValue();
-            areaDesenho.setWidth(Math.max(0, width - 200)); // 200px for control VBox
+            areaDesenhoWidth.set(Math.max(0, width - 200)); // 200px for control VBox
         });
         rootPane.heightProperty().addListener((obs, oldVal, newVal) -> {
             double height = newVal.doubleValue();
-            areaDesenho.setHeight(height);
+            areaDesenhoHeight.set(height);
         });
 
         // --- Controls VBox setup --- //
@@ -142,6 +151,18 @@ public class EletroEF extends Application {
         CheckBox checkbox4 = new CheckBox("Add Line");
         CheckBox checkbox5 = new CheckBox("Add Circle");
 
+        EventHandler<ActionEvent> updatePannable = event -> {
+            if (checkbox3.isSelected() || checkbox4.isSelected() || checkbox5.isSelected()) {
+                scrollPane.setPannable(false);
+            } else {
+                scrollPane.setPannable(true);
+            }
+        };
+        
+        checkbox3.setOnAction(updatePannable);
+        checkbox4.setOnAction(updatePannable);
+        checkbox5.setOnAction(updatePannable);
+        
         // Point value input
         tf1 = new TextField("200");
 
@@ -151,8 +172,6 @@ public class EletroEF extends Application {
         rootPane.setRight(controls);
 
         // --- Controls event handlers --- //
-
-        // Toggle display of field vectors
         checkbox1.setOnAction(arg0 -> {
             if ((checkbox1.isSelected())&&(triangulacaoObj!=null)){
                 Triangulacao.desenharVetores(triangulacaoObj.arrTriangulosNorm, triangulacaoObj.E, triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
@@ -160,7 +179,6 @@ public class EletroEF extends Application {
                 Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
             }
         });
-        // Toggle display of triangles
         checkbox2.setOnAction(arg0 -> {
             if ((checkbox2.isSelected())&&(triangulacaoObj!=null)) {
                 Triangulacao.desenhartriangulos(triangulacaoObj.arrTriangulosNorm, drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm );
@@ -168,30 +186,31 @@ public class EletroEF extends Application {
                 Triangulacao.deletartriangulos(drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm);
             }
         });
-        // Mutually exclusive checkboxes for drawing modes
+        
         checkbox3.setOnAction(arg0 -> {
             if ((checkbox4.isSelected())) checkbox4.setSelected(false);
             if ((checkbox5.isSelected())) checkbox5.setSelected(false);
+            updatePannable.handle(arg0);
         });
         checkbox4.setOnAction(arg0 -> {
             if ((checkbox3.isSelected())) checkbox3.setSelected(false);
             if ((checkbox5.isSelected())) checkbox5.setSelected(false);
+            updatePannable.handle(arg0);
         });
         checkbox5.setOnAction(arg0 -> {
             if ((checkbox4.isSelected())) checkbox4.setSelected(false);
             if ((checkbox3.isSelected())) checkbox3.setSelected(false);
+            updatePannable.handle(arg0);
         });
 
+
         // --- Drawing initialization --- //
-        // The first 3 points are initialized for the triangulation base
         arrPontos[0] = new Ponto(0,0);
         arrPontos[1] = new Ponto(2000,0);
         arrPontos[2] = new Ponto(0,2000);
         numeroPontosAtual = 3;
 
         // --- Mouse event handlers for adding points/lines/circles --- //
-
-        // Add single point at click
         areaDesenho.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
             if(checkbox3.isSelected()){
                 if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
@@ -202,6 +221,9 @@ public class EletroEF extends Application {
                     arrCircle[numeroPontosAtual].setFill(Color.RED); 
                     drawingGroup.getChildren().add(arrCircle[numeroPontosAtual]);
                     arrPontos[numeroPontosAtual] = new Ponto(mouseEvent.getX(),mouseEvent.getY(),Integer.parseInt(tf1.getText()));
+                    // --- ADD: make the new circle draggable! ---
+                    makeDraggable(arrCircle[numeroPontosAtual], areaDesenho);
+                    // --- END ADD
                     numeroPontosAtual++;
                     System.out.println(numeroPontosAtual);
                 } else {
@@ -210,21 +232,18 @@ public class EletroEF extends Application {
             }
         });
 
-        // Store start of line/circle for mouse drag
         areaDesenho.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
             if(checkbox4.isSelected()||checkbox5.isSelected()){
                 System.out.println("mouse click detected! " + mouseEvent.getX()+" "+ mouseEvent.getY());
                 inicio_linha_x =  mouseEvent.getX();
                 inicio_linha_y =  mouseEvent.getY();
             }
-            // SCENE PAN: Store initial position if not in any drawing mode
             if(!checkbox3.isSelected() && !checkbox4.isSelected() && !checkbox5.isSelected()) {
                 lastDragX = mouseEvent.getX();
                 lastDragY = mouseEvent.getY();
             }
         });
 
-        // On mouse release, add line or circle of points
         areaDesenho.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseEvent -> {
             double x, y, dist;
             double n = 0;
@@ -249,6 +268,9 @@ public class EletroEF extends Application {
                         arrCircle[numeroPontosAtual].setFill(Color.RED);
                         drawingGroup.getChildren().add(arrCircle[numeroPontosAtual]);
                         arrPontos[numeroPontosAtual] = new Ponto(inicio_linha_x+5*i*x,inicio_linha_y+5*i*y,Integer.parseInt(tf1.getText()));
+                        // --- ADD: make the new circle draggable ---
+                        makeDraggable(arrCircle[numeroPontosAtual], areaDesenho);
+                        // --- END ADD
                         numeroPontosAtual++;
                         System.out.println(numeroPontosAtual);
                     } else {
@@ -275,6 +297,9 @@ public class EletroEF extends Application {
                         arrCircle[numeroPontosAtual].setFill(Color.RED);
                         drawingGroup.getChildren().add(arrCircle[numeroPontosAtual]);
                         arrPontos[numeroPontosAtual] = new Ponto(centerX,centerY,Integer.parseInt(tf1.getText()));
+                        // --- ADD: make the new circle draggable ---
+                        makeDraggable(arrCircle[numeroPontosAtual], areaDesenho);
+                        // --- END ADD
                         numeroPontosAtual++;
                         System.out.println(centerX);
                         System.out.println(centerY);
@@ -344,6 +369,56 @@ public class EletroEF extends Application {
         primarystage.setTitle("Electrostatics Finite Element Calculus");
         primarystage.show();  
     }  
+
+    /**
+     * Makes a Circle draggable within areaDesenho and expands the area if dragged outside.
+     */
+    private void makeDraggable(Circle circle, Rectangle areaDesenho) {
+        final javafx.beans.property.DoubleProperty mouseAnchorX = new SimpleDoubleProperty();
+        final javafx.beans.property.DoubleProperty mouseAnchorY = new SimpleDoubleProperty();
+
+        circle.setOnMousePressed(event -> {
+            mouseAnchorX.set(event.getSceneX() - circle.getCenterX());
+            mouseAnchorY.set(event.getSceneY() - circle.getCenterY());
+            // Prevent ScrollPane from scrolling while dragging
+            circle.getScene().setCursor(javafx.scene.Cursor.MOVE);
+            event.consume();
+        });
+
+        circle.setOnMouseReleased(event -> {
+            circle.getScene().setCursor(javafx.scene.Cursor.DEFAULT);
+        });
+
+        circle.setOnMouseDragged(event -> {
+            double newX = event.getSceneX() - mouseAnchorX.get();
+            double newY = event.getSceneY() - mouseAnchorY.get();
+
+            circle.setCenterX(newX);
+            circle.setCenterY(newY);
+
+            // Expand areaDesenho if circle goes outside
+            double padding = 40;
+            double rightEdge = newX + circle.getRadius();
+            double leftEdge = newX - circle.getRadius();
+            double bottomEdge = newY + circle.getRadius();
+            double topEdge = newY - circle.getRadius();
+
+            if (rightEdge + padding > areaDesenhoWidth.get()) {
+                areaDesenhoWidth.set(rightEdge + padding);
+            }
+            if (bottomEdge + padding > areaDesenhoHeight.get()) {
+                areaDesenhoHeight.set(bottomEdge + padding);
+            }
+            if (leftEdge - padding < 0) {
+                circle.setCenterX(circle.getRadius() + padding);
+            }
+            if (topEdge - padding < 0) {
+                circle.setCenterY(circle.getRadius() + padding);
+            }
+
+            event.consume(); // Prevent scroll
+        });
+    }
 
     /**
      * Main entry point. Launches JavaFX application.
