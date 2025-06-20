@@ -22,66 +22,66 @@ public class Triangulacao {
      * @param a Matrix to invert
      * @return Inverse matrix
      */
-    static double[][] inversa(int n, double[][] a) {
-        double[][] matrizAumentada = new double[n][2*n];
-        double[][] matrizInversa = new double[n][2*n];
+	static double[][] inversa(int n, double[][] a) {
+	    double[][] matrizAumentada = new double[n][2*n];
+	    double[][] matrizInversa = new double[n][n];
+	    final double EPSILON = 1e-10;  // Tolerância para singularidade
 
-        int i,j,m,k;
-        double temp,term;
+	    // Inicialização da matriz aumentada [A | I]
+	    for(int i = 0; i < n; i++) {
+	        System.arraycopy(a[i], 0, matrizAumentada[i], 0, n);
+	        for(int j = 0; j < n; j++) {
+	            matrizAumentada[i][j+n] = (i == j) ? 1 : 0;
+	        }
+	    }
 
-        m=n;
-        // Create augmented matrix [A|I]
-        for(i=0;i<n;i++){
-            for(j=0;j<n;j++) {
-                matrizAumentada[i][j] = a[i][j];
-            }
-            for(j=0;j<n;j++) {
-                if(i==j)
-                    matrizAumentada[i][j+n] = 1;
-                else
-                    matrizAumentada[i][j+n] = 0;
-            }
-        }
+	    // Eliminação para frente com pivotação
+	    for(int i = 0; i < n; i++) {
+	        // Pivô máximo para estabilidade numérica
+	        int max = i;
+	        for(int k = i+1; k < n; k++) {
+	            if(Math.abs(matrizAumentada[k][i]) > Math.abs(matrizAumentada[max][i])) {
+	                max = k;
+	            }
+	        }
+	        
+	        // Verificar singularidade
+	        if(Math.abs(matrizAumentada[max][i]) < EPSILON) {
+	            throw new ArithmeticException("Matriz singular - não invertível");
+	        }
+	        
+	        // Trocar linhas se necessário
+	        if(max != i) {
+	            double[] temp = matrizAumentada[i];
+	            matrizAumentada[i] = matrizAumentada[max];
+	            matrizAumentada[max] = temp;
+	        }
+	        
+	        // Normalizar linha do pivô
+	        double pivot = matrizAumentada[i][i];
+	        for(int j = 0; j < 2*n; j++) {
+	            matrizAumentada[i][j] /= pivot;
+	        }
+	        
+	        // Eliminação
+	        for(int k = 0; k < n; k++) {
+	            if(k != i) {
+	                double factor = matrizAumentada[k][i];
+	                for(int j = 0; j < 2*n; j++) {
+	                    matrizAumentada[k][j] -= factor * matrizAumentada[i][j];
+	                }
+	            }
+	        }
+	    }
 
-        // Forward elimination with partial pivoting
-        for(i=0;i<m-1;i++){
-            for(k=i+1;k<m;k++){
-                if((Math.abs(matrizAumentada[i][i])<Math.abs(matrizAumentada[k][i]))){
-                    for(j=0;j<2*n;j++)
-                    {
-                        temp=matrizAumentada[i][j];
-                        matrizAumentada[i][j]=matrizAumentada[k][j];
-                        matrizAumentada[k][j]=temp;
-                    }
-                }
-            }
-            for(k=i+1;k<m;k++){
-                term = 0;
-                if(matrizAumentada[i][i]!=0)
-                    term=matrizAumentada[k][i]/ matrizAumentada[i][i];
-                for(j=0;j<2*n;j++){
-                    matrizAumentada[k][j]=matrizAumentada[k][j]-term*matrizAumentada[i][j];
-                }
-            }
-        }
-        // Backward elimination
-        for(i=m-1;i>0;i--){
-            for(k=i-1;k>=0;k--){
-                term=matrizAumentada[k][i]/matrizAumentada[i][i];
-                for(j=2*n-1;j>=0;j--){
-                    matrizAumentada[k][j]=matrizAumentada[k][j]-term*matrizAumentada[i][j];
-                }
-            }
-        }
-        // Extract inverse from augmented matrix
-        for(i=0;i<n;i++){
-            for(j=0;j<n;j++) {
-                matrizInversa[i][j] = matrizAumentada[i][j+n]/matrizAumentada[i][i];
-            }
-        }
-        return matrizInversa;
-    }
-
+	    // Extrair matriz inversa
+	    for(int i = 0; i < n; i++) {
+	        System.arraycopy(matrizAumentada[i], n, matrizInversa[i], 0, n);
+	    }
+	    
+	    return matrizInversa;
+	}
+    
     /**
      * Prints a square matrix (for debug).
      */
@@ -182,6 +182,31 @@ public class Triangulacao {
             return false;
     }
 
+    // Adicione este método na classe Triangulacao
+    private boolean pontosIguais(double x1, double y1, double x2, double y2) {
+        final double EPSILON = 1e-6;  // Tolerância para diferenças
+        return Math.abs(x1 - x2) < EPSILON && Math.abs(y1 - y2) < EPSILON;
+    }
+    
+    private boolean isSuperTriangleVertex(double x, double y) {
+        final double EPSILON = 1e-6;  // Tolerância para diferenças
+        
+        // Verifica se é o vértice (0, 0)
+        if (Math.abs(x - 0) < EPSILON && Math.abs(y - 0) < EPSILON) {
+            return true;
+        }
+        // Verifica se é o vértice (0, 2000)
+        if (Math.abs(x - 0) < EPSILON && Math.abs(y - 2000) < EPSILON) {
+            return true;
+        }
+        // Verifica se é o vértice (2000, 0)
+        if (Math.abs(x - 2000) < EPSILON && Math.abs(y - 0) < EPSILON) {
+            return true;
+        }
+        
+        return false;
+    }
+    
     /**
      * Draws field vectors (e.g., electric field) at the centroid of each triangle.
      * @param arrTriangulosNorm Array of triangles
@@ -205,8 +230,12 @@ public class Triangulacao {
         for(i=0;i<numeroTriangulosNormFinal;i++){
             x = arrTriangulosNorm[i].centroideX;
             y = arrTriangulosNorm[i].centroideY;
-            u = 30*E[i][0]/Emax;
-            v = 30*E[i][1]/Emax;
+            if (Emax < 1e-10) {
+                u = 0; v = 0;
+            } else {
+                u = 30 * E[i][0] / Emax;
+                v = 30 * E[i][1] / Emax;
+            }
             x1 = x;
             x2 = x+u;
             y1 = y;
@@ -296,8 +325,8 @@ public class Triangulacao {
         for (i = 0; i< 40; i++){
             for (j = 0; j< 30; j++){
                 pontoProximo=false;
-                for(k=3;k<numeroPontosContorno-3;k++){
-                    if(Math.sqrt(Math.pow(5+20*i-arrPontos[k].x,2)+Math.pow(5+20*j-arrPontos[k].y,2))<10) {
+                for(k = 3; k < numeroPontosContorno; k++){
+                	if (Math.sqrt(Math.pow(5+20*i - arrPontos[k].x, 2) + Math.pow(5+20*j - arrPontos[k].y, 2)) < 10) {
                         pontoProximo=true;
                     }
                 }
@@ -390,12 +419,12 @@ public class Triangulacao {
             sortVetor.ordenarVetor(vetorParaSortear);
 
             // Reorder arrVertices according to sorted angles
-            for(j =0;j<numerovertices;j++) {
-                for(l =0;l<numerovertices;l++) {
-                    if(vetorParaSortear[j]==temparrVertices[l].anguloParaCentro) {
-                        arrVertices[j].x = temparrVertices[l].x;
-                        arrVertices[j].y = temparrVertices[l].y;
-                        arrVertices[j].anguloParaCentro = temparrVertices[l].anguloParaCentro;                 
+        
+            for(j = 0; j < numerovertices; j++) {
+                for(l = 0; l < numerovertices; l++) {
+                    if(Math.abs(vetorParaSortear[j] - temparrVertices[l].anguloParaCentro) < 1e-9) {
+                        arrVertices[j] = temparrVertices[l];
+                        break; // Evitar duplicatas
                     }
                 }
             }
@@ -427,15 +456,25 @@ public class Triangulacao {
 
         // Filter out triangles that include super triangle vertices
         numeroTriangulosNorm = 0;
-        for(j=0;j<numerotriangulos;j++) {
-            if(!((arrTriangulos[j].x1== 0)&&(arrTriangulos[j].y1== 0)||(arrTriangulos[j].x2== 0)&&(arrTriangulos[j].y2== 0)||(arrTriangulos[j].x3== 0)&&(arrTriangulos[j].y3== 0)))
-                if(!((arrTriangulos[j].x1== 0)&&(arrTriangulos[j].y1== 2000)||(arrTriangulos[j].x2== 0)&&(arrTriangulos[j].y2== 2000)||(arrTriangulos[j].x3== 0)&&(arrTriangulos[j].y3== 2000)))
-                    if(!((arrTriangulos[j].x1== 2000)&&(arrTriangulos[j].y1== 0)||(arrTriangulos[j].x2== 2000)&&(arrTriangulos[j].y2== 0)||(arrTriangulos[j].x3== 2000)&&(arrTriangulos[j].y3== 0)))
-                    {
-                        arrTriangulosNorm[numeroTriangulosNorm] = new Triangulo(arrTriangulos[j].x1,arrTriangulos[j].y1,arrTriangulos[j].x2,arrTriangulos[j].y2,arrTriangulos[j].x3,arrTriangulos[j].y3);
-                        numeroTriangulosNorm++;
-                    }
+
+        for(j = 0; j < numerotriangulos; j++) {
+            // Verifica se o triângulo contém algum vértice do triângulo super
+            boolean hasSuperVertex = 
+                isSuperTriangleVertex(arrTriangulos[j].x1, arrTriangulos[j].y1) ||
+                isSuperTriangleVertex(arrTriangulos[j].x2, arrTriangulos[j].y2) ||
+                isSuperTriangleVertex(arrTriangulos[j].x3, arrTriangulos[j].y3);
+            
+            // Só inclui se NÃO tiver nenhum vértice do triângulo super
+            if (!hasSuperVertex) {
+                arrTriangulosNorm[numeroTriangulosNorm] = new Triangulo(
+                    arrTriangulos[j].x1, arrTriangulos[j].y1,
+                    arrTriangulos[j].x2, arrTriangulos[j].y2,
+                    arrTriangulos[j].x3, arrTriangulos[j].y3
+                );
+                numeroTriangulosNorm++;
+            }
         }
+        
 
         // Optionally draw triangles on screen
         if(checkbox2.isSelected())
@@ -492,21 +531,22 @@ public class Triangulacao {
 
         // Build connectivity matrix for assembling the global matrix
         int[][] matrizdeconectividade = new int[numeroTriangulosNorm][4];
-        for(j=0;j<numeroTriangulosNorm;j++) {
+
+        for(j = 0; j < numeroTriangulosNorm; j++) {
             matrizdeconectividade[j][3] = 1;
-            for(i=0;i<numeroPontosTotal;i++){
-                if((arrTriangulosNorm[j].x1==arrPontosNorm[i].x)&&(arrTriangulosNorm[j].y1==arrPontosNorm[i].y)) {
+            for(i = 0; i < numeroPontosTotal; i++) {
+                if(pontosIguais(arrTriangulosNorm[j].x1, arrTriangulosNorm[j].y1, arrPontosNorm[i].x, arrPontosNorm[i].y)) {
                     matrizdeconectividade[j][0] = i;
                 }
-                if((arrTriangulosNorm[j].x2==arrPontosNorm[i].x)&&(arrTriangulosNorm[j].y2==arrPontosNorm[i].y)) {
+                if(pontosIguais(arrTriangulosNorm[j].x2, arrTriangulosNorm[j].y2, arrPontosNorm[i].x, arrPontosNorm[i].y)) {
                     matrizdeconectividade[j][1] = i;
                 }
-                if((arrTriangulosNorm[j].x3==arrPontosNorm[i].x)&&(arrTriangulosNorm[j].y3==arrPontosNorm[i].y)) {
+                if(pontosIguais(arrTriangulosNorm[j].x3, arrTriangulosNorm[j].y3, arrPontosNorm[i].x, arrPontosNorm[i].y)) {
                     matrizdeconectividade[j][2] = i;
                 }
             }
         }
-
+        
         // Assemble element matrices into the global matrix
         for(i=0;i<numeroTriangulosNorm;i++)
         {

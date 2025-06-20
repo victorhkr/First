@@ -40,10 +40,6 @@ public class EletroEF extends Application {
     double inicio_linha_y = 0;
     boolean existeTriangulacao = false; // Not used, but intended to track triangulation state
 
-    // Example enum (not used in logic)
-    enum Abacaxi {Feio , Doce, amrgo};
-    Abacaxi baxi = Abacaxi.Feio;
-
     // Fields for dragging the whole scene
     double lastDragX = 0;
     double lastDragY = 0;
