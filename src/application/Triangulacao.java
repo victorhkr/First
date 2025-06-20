@@ -230,11 +230,11 @@ public class Triangulacao {
         for(i=0;i<numeroTriangulosNormFinal;i++){
             x = arrTriangulosNorm[i].centroideX;
             y = arrTriangulosNorm[i].centroideY;
-            if (Emax < 1e-10) {
+            if (Emax < 1e-17) {
                 u = 0; v = 0;
             } else {
-                u = 30 * E[i][0] / Emax;
-                v = 30 * E[i][1] / Emax;
+                u = 100 * E[i][0] / Emax;
+                v = 100 * E[i][1] / Emax;
             }
             x1 = x;
             x2 = x+u;
