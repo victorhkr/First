@@ -1,5 +1,7 @@
 package application;  
 
+import java.util.ArrayList;
+
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -17,6 +19,7 @@ import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;  
 import javafx.scene.shape.Circle;  
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 import javafx.collections.ObservableList;
@@ -30,8 +33,8 @@ public class EletroEF extends Application {
 	CheckBox checkbox2; // Draw triangles
 	TextField tf1;      // Text field for point value input
 	// Arrays for points and their graphical representations
-	Ponto[] arrPontos = new Ponto[20000];
-	Circle[] arrCircle = new Circle[20000];
+	  ArrayList<Ponto> arrPontos = new ArrayList<>();
+	    ArrayList<Circle> arrCircle = new ArrayList<>();
 	int i=0;
 	int numeroPontosAtual=0; // Number of points currently on screen
 
@@ -53,15 +56,15 @@ public class EletroEF extends Application {
 		Scene scene = new Scene(rootPane, 1000, 600);
 
 		// --- Drawing area setup --- //
-		Group drawingGroup = new Group();
+		Pane drawingPane = new Pane();  // <-- Alteração aqui
 		Rectangle areaDesenho = new Rectangle();
 		areaDesenho.setX(0);
 		areaDesenho.setY(0);
 		areaDesenho.setWidth(800);
 		areaDesenho.setHeight(600);
 		areaDesenho.setFill(Color.GREY);
-		drawingGroup.getChildren().add(areaDesenho);
-		rootPane.setCenter(drawingGroup);
+		drawingPane.getChildren().add(areaDesenho);
+		rootPane.setCenter(drawingPane);
 
 		// Make drawing area resize with window (minus controls VBox width)
 		rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
@@ -85,24 +88,26 @@ public class EletroEF extends Application {
 			// Remove previous triangulation if any
 			System.out.println("hello world motherfucker");
 			if(triangulacaoObj!=null) {
-				Triangulacao.deletartriangulos(drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm);
-				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
+				Triangulacao.deletartriangulos(drawingPane, triangulacaoObj.arrpolygono);
+				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, drawingPane);
 			}
 			// Create new triangulation object
-			triangulacaoObj = new Triangulacao(drawingGroup, arrPontos, numeroPontosAtual, checkbox1, checkbox2);
+			triangulacaoObj = new Triangulacao(drawingPane, arrPontos, numeroPontosAtual, checkbox1, checkbox2);
 		});
 
 		// Button: Delete all points except initial 3
 		Button btn2 = new Button("Delete all points");
 		btn2.setMaxWidth(Double.MAX_VALUE);
 		btn2.setOnAction(arg0 -> {
-			for(i=3;i<numeroPontosAtual;i++) {
-				drawingGroup.getChildren().remove(arrCircle[i]);
-				System.out.println(i);
-			}
+			// Remover círculos visuais (exceto os 3 iniciais)
+            for(i = arrCircle.size() - 1; i >= 3; i--) {
+                drawingPane.getChildren().remove(arrCircle.get(i));
+                arrCircle.remove(i);
+                arrPontos.remove(i);
+            }
 			if(triangulacaoObj!=null) {
-				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
-				Triangulacao.deletartriangulos(drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm);
+				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, drawingPane);
+				Triangulacao.deletartriangulos(drawingPane, triangulacaoObj.arrpolygono);
 			}
 			triangulacaoObj = null;
 			numeroPontosAtual=3;
@@ -112,10 +117,12 @@ public class EletroEF extends Application {
 		Button btn3 = new Button("Delete last point");
 		btn3.setMaxWidth(Double.MAX_VALUE);
 		btn3.setOnAction(arg0 -> {
-			if(numeroPontosAtual>3){
-				drawingGroup.getChildren().remove(arrCircle[numeroPontosAtual-1]);
-				numeroPontosAtual--;
-			}
+            if(arrPontos.size() > 3) {
+                drawingPane.getChildren().remove(arrCircle.get(arrCircle.size() - 1));
+                arrCircle.remove(arrCircle.size() - 1);
+                arrPontos.remove(arrPontos.size() - 1);
+                numeroPontosAtual--;
+            }
 			triangulacaoObj = null;
 		});
 
@@ -144,17 +151,17 @@ public class EletroEF extends Application {
 		// Toggle display of field vectors
 		checkbox1.setOnAction(arg0 -> {
 			if ((checkbox1.isSelected())&&(triangulacaoObj!=null)){
-				Triangulacao.desenharVetores(triangulacaoObj.arrTriangulosNorm, triangulacaoObj.E, triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
+				Triangulacao.desenharVetores(triangulacaoObj.arrTriangulosNorm, triangulacaoObj.E, triangulacaoObj.arrVetorLinha, drawingPane);
 			} else if((!checkbox1.isSelected())&&(triangulacaoObj!=null)){
-				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, triangulacaoObj.numeroTriangulosNorm, drawingGroup);
+				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, drawingPane);
 			}
 		});
 		// Toggle display of triangles
 		checkbox2.setOnAction(arg0 -> {
 			if ((checkbox2.isSelected())&&(triangulacaoObj!=null)) {
-				Triangulacao.desenhartriangulos(triangulacaoObj.arrTriangulosNorm, drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm );
+				Triangulacao.desenhartriangulos(triangulacaoObj.arrTriangulosNorm, drawingPane, triangulacaoObj.arrpolygono);
 			}else if((!checkbox2.isSelected())&&(triangulacaoObj!=null)) {
-				Triangulacao.deletartriangulos(drawingGroup, triangulacaoObj.arrpolygono, triangulacaoObj.numeroTriangulosNorm);
+				Triangulacao.deletartriangulos(drawingPane, triangulacaoObj.arrpolygono);
 			}
 		});
 		// Mutually exclusive checkboxes for drawing modes
@@ -173,31 +180,42 @@ public class EletroEF extends Application {
 
 		// --- Drawing initialization --- //
 		// The first 3 points are initialized for the triangulation base
-		arrPontos[0] = new Ponto(0,0);
-		arrPontos[1] = new Ponto(2000,0);
-		arrPontos[2] = new Ponto(0,2000);
+        // Adicionar os pontos iniciais
+        arrPontos.add(new Ponto(0,0));
+        arrPontos.add(new Ponto(2000,0));
+        arrPontos.add(new Ponto(0,2000));
 		numeroPontosAtual = 3;
 
+        // Adicionar círculos visuais para os pontos iniciais
+        for(Ponto ponto : arrPontos) {
+            Circle circle = new Circle(ponto.x, ponto.y, 2);
+            circle.setFill(Color.RED);
+            drawingPane.getChildren().add(circle);
+            arrCircle.add(circle);
+        }
+        numeroPontosAtual = 3;
+        
 		// --- Mouse event handlers for adding points/lines/circles --- //
 
 		// Add single point at click
-		areaDesenho.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
-			if(checkbox3.isSelected()){
-				if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
-					arrCircle[numeroPontosAtual]= new Circle();  
-					arrCircle[numeroPontosAtual].setCenterX(mouseEvent.getX());  
-					arrCircle[numeroPontosAtual].setCenterY(mouseEvent.getY());  
-					arrCircle[numeroPontosAtual].setRadius(2);  
-					arrCircle[numeroPontosAtual].setFill(Color.RED); 
-					drawingGroup.getChildren().add(arrCircle[numeroPontosAtual]);
-					arrPontos[numeroPontosAtual] = new Ponto(mouseEvent.getX(),mouseEvent.getY(),Integer.parseInt(tf1.getText()));
-					numeroPontosAtual++;
-					System.out.println(numeroPontosAtual);
-				} else {
-					System.out.println("Maximum number of points reached!");
-				}
-			}
-		});
+        areaDesenho.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
+            if(checkbox3.isSelected()) {
+                Circle circle = new Circle(mouseEvent.getX(), mouseEvent.getY(), 2);
+                circle.setFill(Color.RED);
+                drawingPane.getChildren().add(circle);
+                arrCircle.add(circle);
+                
+                int valorT;
+                try {
+                    valorT = Integer.parseInt(tf1.getText());
+                } catch (NumberFormatException e) {
+                    valorT = 200; // Valor padrão
+                }
+                
+                arrPontos.add(new Ponto(mouseEvent.getX(), mouseEvent.getY(), valorT));
+                numeroPontosAtual++;
+            }
+        });
 
 		// Store start of line/circle for mouse drag
 		areaDesenho.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
@@ -223,65 +241,74 @@ public class EletroEF extends Application {
 
 			// Add line of points
 			if(checkbox4.isSelected()){
-				x = mouseEvent.getX()-inicio_linha_x;
-				y = mouseEvent.getY()-inicio_linha_y;
-				dist = Math.sqrt(Math.pow(x, 2)+Math.pow(y, 2));
-				if (dist < 1e-6) {
-					// Tratar clique sem movimento
-					return;
-				}
-				else {
-					x = x/dist;
-					y = y/dist;
-				}
-				n = dist/5;
-				for(int i =0;i<n;i++){
-					if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
-						arrCircle[numeroPontosAtual]= new Circle();
-						arrCircle[numeroPontosAtual].setCenterX(inicio_linha_x+5*i*x);
-						arrCircle[numeroPontosAtual].setCenterY(inicio_linha_y+5*i*y);
-						arrCircle[numeroPontosAtual].setRadius(2);
-						arrCircle[numeroPontosAtual].setFill(Color.RED);
-						drawingGroup.getChildren().add(arrCircle[numeroPontosAtual]);
-						arrPontos[numeroPontosAtual] = new Ponto(inicio_linha_x+5*i*x,inicio_linha_y+5*i*y,Integer.parseInt(tf1.getText()));
-						numeroPontosAtual++;
-						System.out.println(numeroPontosAtual);
-					} else {
-						System.out.println("Maximum number of points reached!");
-						break;
-					}
-				}
+			    x = mouseEvent.getX()-inicio_linha_x;
+			    y = mouseEvent.getY()-inicio_linha_y;
+			    dist = Math.sqrt(Math.pow(x, 2)+Math.pow(y, 2));
+			    
+			    if (dist < 1e-6) {
+			        return; // Clique sem movimento
+			    }
+			    else {
+			        x = x/dist; // Normalização X
+			        y = y/dist; // Normalização Y
+			    }
+			    
+			    int numPontosLinha = (int)(dist/5); // Calcular quantidade de pontos
+			    
+			    for(int i = 0; i < numPontosLinha; i++){
+			        // Calcular posição do ponto
+			        double pointX = inicio_linha_x + 5 * i * x;
+			        double pointY = inicio_linha_y + 5 * i * y;
+			        
+			        // Criar círculo visual
+			        Circle circle = new Circle(pointX, pointY, 2);
+			        circle.setFill(Color.RED);
+			        drawingPane.getChildren().add(circle);
+			        arrCircle.add(circle);
+			        
+			        // Obter valor do campo com tratamento de erro
+			        int valorT;
+			        try {
+			            valorT = Integer.parseInt(tf1.getText());
+			        } catch (NumberFormatException e) {
+			            valorT = 200; // Valor padrão
+			        }
+			        
+			        // Adicionar ponto ao modelo
+			        arrPontos.add(new Ponto(pointX, pointY, valorT));
+			        numeroPontosAtual++;
+			    }
 			}
 
 			// Add circle of points
 			if(checkbox5.isSelected()){
-				double r;
-				r = dist;
-				dist = 2*PI*r;
-				n = dist/5;
-				for(int i =0;i<n;i++){
-
-					double angle = i * (2 * Math.PI / n);
-					double centerX = inicio_linha_x + r * Math.cos(angle);
-					double centerY = inicio_linha_y + r * Math.sin(angle);
-
-					if (numeroPontosAtual < arrCircle.length && numeroPontosAtual < arrPontos.length) {
-						arrCircle[numeroPontosAtual]= new Circle();
-						arrCircle[numeroPontosAtual].setCenterX(centerX);
-						arrCircle[numeroPontosAtual].setCenterY(centerY);
-						arrCircle[numeroPontosAtual].setRadius(2);
-						arrCircle[numeroPontosAtual].setFill(Color.RED);
-						drawingGroup.getChildren().add(arrCircle[numeroPontosAtual]);
-						arrPontos[numeroPontosAtual] = new Ponto(centerX,centerY,Integer.parseInt(tf1.getText()));
-						numeroPontosAtual++;
-						System.out.println(centerX);
-						System.out.println(centerY);
-						System.out.println(numeroPontosAtual);
-					} else {
-						System.out.println("Maximum number of points reached!");
-						break;
-					}
-				}
+			    double raio = dist; // Distância do centro ao ponto de soltura = raio
+			    double perimetro = 2 * Math.PI * raio;
+			    int numPontosCirculo = (int)(perimetro / 5); // Calcular quantidade de pontos
+			    
+			    for(int i = 0; i < numPontosCirculo; i++){
+			        double angle = i * (2 * Math.PI / numPontosCirculo);
+			        double centerX = inicio_linha_x + raio * Math.cos(angle);
+			        double centerY = inicio_linha_y + raio * Math.sin(angle);
+			        
+			        // Criar círculo visual
+			        Circle circle = new Circle(centerX, centerY, 2);
+			        circle.setFill(Color.RED);
+			        drawingPane.getChildren().add(circle);
+			        arrCircle.add(circle);
+			        
+			        // Obter valor do campo com tratamento de erro
+			        int valorT;
+			        try {
+			            valorT = Integer.parseInt(tf1.getText());
+			        } catch (NumberFormatException e) {
+			            valorT = 200; // Valor padrão
+			        }
+			        
+			        // Adicionar ponto ao modelo
+			        arrPontos.add(new Ponto(centerX, centerY, valorT));
+			        numeroPontosAtual++;
+			    }
 			}
 		});
 
@@ -292,19 +319,20 @@ public class EletroEF extends Application {
 				double dy = mouseEvent.getY() - lastDragY;
 
 				// Move points and circles
-				for (int idx = 0; idx < numeroPontosAtual; idx++) {
-					if (arrCircle[idx] != null) {
-						arrPontos[idx].x += dx;
-						arrPontos[idx].y += dy;
-						arrCircle[idx].setCenterX(arrCircle[idx].getCenterX() + dx);
-						arrCircle[idx].setCenterY(arrCircle[idx].getCenterY() + dy);
-					}
-				}
+	            for (int idx = 0; idx < arrPontos.size(); idx++) {
+	                Ponto ponto = arrPontos.get(idx);
+	                Circle circle = arrCircle.get(idx);
+	                
+	                ponto.x += dx;
+	                ponto.y += dy;
+	                circle.setCenterX(circle.getCenterX() + dx);
+	                circle.setCenterY(circle.getCenterY() + dy);
+	            }
 
 				// Move triangulation polygons (triangles)
 				if (triangulacaoObj != null && triangulacaoObj.arrpolygono != null) {
 					for (int i = 0; i < triangulacaoObj.numeroTriangulosNorm; i++) {
-						Polygon poly = triangulacaoObj.arrpolygono[i];
+						Polygon poly = triangulacaoObj.arrpolygono.get(i);
 						if (poly != null) {
 							ObservableList<Double> points = poly.getPoints();
 							for (int j = 0; j < points.size(); j += 2) {
@@ -317,19 +345,20 @@ public class EletroEF extends Application {
 
 				// Move field vector lines
 				if (triangulacaoObj != null && triangulacaoObj.arrVetorLinha != null) {
-					for (int i = 0; i < triangulacaoObj.arrVetorLinha.length; i++) {
-						if (triangulacaoObj.arrVetorLinha[i] != null) {
-							for (int j = 0; j < triangulacaoObj.arrVetorLinha[i].length; j++) {
-								Line vec = triangulacaoObj.arrVetorLinha[i][j];
-								if (vec != null) {
-									vec.setStartX(vec.getStartX() + dx);
-									vec.setStartY(vec.getStartY() + dy);
-									vec.setEndX(vec.getEndX() + dx);
-									vec.setEndY(vec.getEndY() + dy);
-								}
-							}
-						}
-					}
+		            for (int i = 0; i < triangulacaoObj.arrVetorLinha.size(); i++) {
+		                Line[] innerArray = triangulacaoObj.arrVetorLinha.get(i); // CORREÇÃO: .get(i)
+		                if (innerArray != null) {
+		                    for (int j = 0; j < innerArray.length; j++) {
+		                        Line vec = innerArray[j];
+		                        if (vec != null) {
+		                            vec.setStartX(vec.getStartX() + dx);
+		                            vec.setStartY(vec.getStartY() + dy);
+		                            vec.setEndX(vec.getEndX() + dx);
+		                            vec.setEndY(vec.getEndY() + dy);
+		                        }
+		                    }
+		                }
+		            }
 				}
 
 				lastDragX = mouseEvent.getX();

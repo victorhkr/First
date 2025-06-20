@@ -36,36 +36,18 @@ public class Triangulo {
     double anguloParaCentro3;
 
     // Constant for pi
-    final double PI = 3.14159265359;
+    final double PI = Math.PI;
 
     /**
      * Calculates the angle between the centroid and a point (x, y) in degrees.
      * Used for sorting triangle vertices in a consistent order.
      */
     public double acharAngulo(double x, double y) {
-        double angulo;
-
-        // Calculate the angle in degrees between centroid and point
-        angulo = (Math.atan((-centroideY + y) / (-centroideX + x))) * 180 / PI;
-
-        // Adjust the angle based on the quadrant
-        if ((-centroideX + x) > 0 && angulo < 0) {
-            angulo = angulo + 360;
-        } else if ((-centroideX + x) < 0 && angulo < 0) {
-            angulo = angulo + 180;
-        } else if ((-centroideX + x) < 0 && angulo > 0) {
-            angulo = 180 + angulo;
-        }
-        if ((-centroideX + x) == 0 && angulo < 0) {
-            angulo = 360 + angulo;
-        }
-        if ((-centroideY + y) == 0 && (-centroideX + x) > 0) {
-            angulo = 0;
-        }
-        if ((-centroideY + y) == 0 && (-centroideX + x) < 0) {
-            angulo = 180;
-        }
-        return angulo;
+        double dx = x - centroideX;
+        double dy = y - centroideY;
+        double anguloRad = Math.atan2(dy, dx);
+        double anguloGraus = Math.toDegrees(anguloRad);
+        return (anguloGraus < 0) ? anguloGraus + 360 : anguloGraus;
     }
 
     /**
@@ -83,6 +65,18 @@ public class Triangulo {
         this.x3 = x3;
         this.y3 = y3;
 
+
+        // Calcular a área do triângulo
+        double area = Math.abs((x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)))/2.0;
+
+        if (area < 1e-10) {
+            // Triângulo degenerado (área zero)
+            this.xc = 0;
+            this.yc = 0;
+            this.r = Double.MAX_VALUE; // Raio infinito para pontos colineares
+            return; // Pular cálculos adicionais
+        }
+        
         // Compute centroid (average of all points)
         centroideX = (x1 + x2 + x3) / 3;
         centroideY = (y1 + y2 + y3) / 3;
