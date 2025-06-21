@@ -12,16 +12,20 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;  
 import javafx.stage.Stage;
 import quicksortpckg.QuickSort;  
-import javafx.scene.control.CheckBox;  
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.shape.Line;  
 import javafx.scene.shape.Rectangle;  
 import javafx.scene.shape.Circle;  
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.collections.ObservableList;
 
 public class EletroEF extends Application {
@@ -47,39 +51,31 @@ public class EletroEF extends Application {
 	double lastDragX = 0;
 	double lastDragY = 0;
 
-	@Override  
+	@Override
 	public void start(Stage primarystage) {
 		final double PI = 3.14159265358979323846;
 
 		// Main layout: BorderPane with drawing area center and controls on right
-		BorderPane rootPane = new BorderPane();
-		Scene scene = new Scene(rootPane, 1000, 600);
+	    // Sistema de camadas
+	    StackPane rootStack = new StackPane();
+	    BorderPane rootPane = new BorderPane();  // Contêiner principal
+	    Pane drawingPane = new Pane();           // Camada de desenho FEM
 
-		// --- Drawing area setup --- //
-		Pane drawingPane = new Pane();  // <-- Alteração aqui
-		Rectangle areaDesenho = new Rectangle();
-		areaDesenho.setX(0);
-		areaDesenho.setY(0);
-		areaDesenho.setWidth(800);
-		areaDesenho.setHeight(600);
-		areaDesenho.setFill(Color.GREY);
-		drawingPane.getChildren().add(areaDesenho);
-		rootPane.setCenter(drawingPane);
-
-		// Make drawing area resize with window (minus controls VBox width)
-		rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
-			double width = newVal.doubleValue();
-			areaDesenho.setWidth(Math.max(0, width - 200)); // 200px for control VBox
-		});
-		rootPane.heightProperty().addListener((obs, oldVal, newVal) -> {
-			double height = newVal.doubleValue();
-			areaDesenho.setHeight(height);
-		});
+	    rootStack.getChildren().add(rootPane);   // Adiciona o BorderPane principal ao StackPane
+	    Scene scene = new Scene(rootStack, 1000, 600);
+	    
+	    // Área de desenho (fundo)
+	    Rectangle areaDesenho = new Rectangle(0, 0, 800, 600);
+	    areaDesenho.setFill(Color.GREY);
+	    drawingPane.getChildren().add(areaDesenho);
+	    
+	    // Configura área de desenho no centro do BorderPane
+	    rootPane.setCenter(drawingPane);
 
 		// --- Controls VBox setup --- //
 		VBox controls = new VBox(10);
 		controls.setPadding(new Insets(10));
-		controls.setPrefWidth(200);
+		controls.setPrefWidth(300);
 
 		// Button: Start Triangulation
 		Button btn1 = new Button("Start Triangulation");
@@ -138,13 +134,35 @@ public class EletroEF extends Application {
 		CheckBox checkbox4 = new CheckBox("Add Line");
 		CheckBox checkbox5 = new CheckBox("Add Circle");
 
+		// Explicação para a caixa de texto
+		Label labelTensao = new Label("Tensão dos Pontos de Contorno (V):");
+		labelTensao.setStyle("-fx-font-weight: bold; -fx-text-fill: #333;");
+
+		// Dica de ferramenta com explicação detalhada
+		Tooltip tooltipTensao = new Tooltip(
+		    "Define o valor do potencial elétrico para novos pontos de contorno\n\n" +
+		    "• Valor padrão: 200 V\n" +
+		    "• Para simular aterramento, use 0\n" +
+		    "• Para eletrodos carregados, use valores positivos"
+		);
+		Tooltip.install(tf1, tooltipTensao);
+		Tooltip.install(labelTensao, tooltipTensao);
+		
 		// Point value input
 		tf1 = new TextField("200");
 
 		// Add controls to VBox
-		controls.getChildren().addAll(btn1, btn2, btn3, checkbox1, checkbox2, checkbox3, checkbox4, checkbox5, tf1);
-
-		rootPane.setRight(controls);
+		controls.getChildren().addAll(
+			    btn1, btn2, btn3,
+			    new Label("\nEscolha o que vai ser desenhado"),  // Separador
+			    checkbox1, checkbox2, 
+			    new Label("\nModos de Adição de Pontos:"),  // Separador
+			    checkbox3, checkbox4, checkbox5,
+			    new Label(" "),  // Espaçamento
+			    labelTensao,     // Nova label explicativa
+			    tf1              // Caixa de texto existente
+			);
+	    rootPane.setRight(controls);
 
 		// --- Controls event handlers --- //
 

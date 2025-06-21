@@ -293,8 +293,8 @@ public class Triangulacao {
 				u = 0; 
 				v = 0;
 			} else {
-				u = 100 * E[i][0] / Emax;
-				v = 100 * E[i][1] / Emax;
+				u = 10 * E[i][0] / Emax;
+				v = 10 * E[i][1] / Emax;
 			}
 
 			double x1 = x;
