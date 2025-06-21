@@ -1,6 +1,9 @@
 package application;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
@@ -19,69 +22,101 @@ import javafx.scene.layout.Pane;
 public class Triangulacao {
 
 	/**
-	 * Calculates the inverse of a square matrix using Gauss-Jordan elimination.
+	 * Calculates the inverse of a square matrix using LU decomposition.
 	 * @param n Matrix size
 	 * @param a Matrix to invert
 	 * @return Inverse matrix
 	 */
 	static double[][] inversa(int n, double[][] a) {
-		double[][] matrizAumentada = new double[n][2*n];
-		double[][] matrizInversa = new double[n][n];
-		final double EPSILON = 1e-10;  // Tolerância para singularidade
+	    final double EPSILON = 1e-10;  // Tolerância para singularidade
+	    
+	    // Fatoração LU com pivotamento
+	    int[] perm = new int[n];
+	    double[][] lu = new double[n][n];
+	    
+	    // Inicialização
+	    for (int i = 0; i < n; i++) {
+	        perm[i] = i;
+	        System.arraycopy(a[i], 0, lu[i], 0, n);
+	    }
 
-		// Inicialização da matriz aumentada [A | I]
-		for(int i = 0; i < n; i++) {
-			System.arraycopy(a[i], 0, matrizAumentada[i], 0, n);
-			for(int j = 0; j < n; j++) {
-				matrizAumentada[i][j+n] = (i == j) ? 1 : 0;
-			}
-		}
+	    // Decomposição LU
+	    for (int k = 0; k < n; k++) {
+	        // Pivotamento parcial
+	        int maxRow = k;
+	        double maxVal = Math.abs(lu[k][k]);
+	        for (int i = k + 1; i < n; i++) {
+	            if (Math.abs(lu[i][k]) > maxVal) {
+	                maxVal = Math.abs(lu[i][k]);
+	                maxRow = i;
+	            }
+	        }
+	        
+	        if (maxVal < EPSILON) {
+	            throw new ArithmeticException("Matriz singular - não invertível");
+	        }
+	        
+	        // Troca de linhas
+	        if (maxRow != k) {
+	            double[] temp = lu[k];
+	            lu[k] = lu[maxRow];
+	            lu[maxRow] = temp;
+	            
+	            int tempIdx = perm[k];
+	            perm[k] = perm[maxRow];
+	            perm[maxRow] = tempIdx;
+	        }
 
-		// Eliminação para frente com pivotação
-		for(int i = 0; i < n; i++) {
-			// Pivô máximo para estabilidade numérica
-			int max = i;
-			for(int k = i+1; k < n; k++) {
-				if(Math.abs(matrizAumentada[k][i]) > Math.abs(matrizAumentada[max][i])) {
-					max = k;
-				}
-			}
+	        // Fatoração
+	        for (int i = k + 1; i < n; i++) {
+	            lu[i][k] /= lu[k][k];
+	            for (int j = k + 1; j < n; j++) {
+	                lu[i][j] -= lu[i][k] * lu[k][j];
+	            }
+	        }
+	    }
 
-			// Verificar singularidade
-			if(Math.abs(matrizAumentada[max][i]) < EPSILON) {
-				throw new ArithmeticException("Matriz singular - não invertível");
-			}
-
-			// Trocar linhas se necessário
-			if(max != i) {
-				double[] temp = matrizAumentada[i];
-				matrizAumentada[i] = matrizAumentada[max];
-				matrizAumentada[max] = temp;
-			}
-
-			// Normalizar linha do pivô
-			double pivot = matrizAumentada[i][i];
-			for(int j = 0; j < 2*n; j++) {
-				matrizAumentada[i][j] /= pivot;
-			}
-
-			// Eliminação
-			for(int k = 0; k < n; k++) {
-				if(k != i) {
-					double factor = matrizAumentada[k][i];
-					for(int j = 0; j < 2*n; j++) {
-						matrizAumentada[k][j] -= factor * matrizAumentada[i][j];
-					}
-				}
-			}
-		}
-
-		// Extrair matriz inversa
-		for(int i = 0; i < n; i++) {
-			System.arraycopy(matrizAumentada[i], n, matrizInversa[i], 0, n);
-		}
-
-		return matrizInversa;
+	    // Resolver sistemas para cada coluna da matriz identidade
+	    double[][] inv = new double[n][n];
+	    double[] col = new double[n];
+	    
+	    for (int k = 0; k < n; k++) {
+	        // Construir coluna k da matriz identidade
+	        Arrays.fill(col, 0);
+	        col[k] = 1;
+	        
+	        // Aplicar permutação
+	        double[] permCol = new double[n];
+	        for (int i = 0; i < n; i++) {
+	            permCol[i] = col[perm[i]];
+	        }
+	        
+	        // Resolver Ly = Pb (substituição direta)
+	        double[] y = new double[n];
+	        for (int i = 0; i < n; i++) {
+	            y[i] = permCol[i];
+	            for (int j = 0; j < i; j++) {
+	                y[i] -= lu[i][j] * y[j];
+	            }
+	        }
+	        
+	        // Resolver Ux = y (substituição reversa)
+	        double[] x = new double[n];
+	        for (int i = n - 1; i >= 0; i--) {
+	            x[i] = y[i];
+	            for (int j = i + 1; j < n; j++) {
+	                x[i] -= lu[i][j] * x[j];
+	            }
+	            x[i] /= lu[i][i];
+	        }
+	        
+	        // Armazenar coluna na matriz inversa
+	        for (int i = 0; i < n; i++) {
+	            inv[i][k] = x[i];
+	        }
+	    }
+	    
+	    return inv;
 	}
 
 	/**
@@ -193,6 +228,17 @@ public class Triangulacao {
 	private boolean pontosIguais(double x1, double y1, double x2, double y2) {
 		final double EPSILON = 1e-6;  // Tolerância para diferenças
 		return Math.abs(x1 - x2) < EPSILON && Math.abs(y1 - y2) < EPSILON;
+	}
+	
+	// Método auxiliar para verificar existência
+	private boolean verticeExists(ArrayList<Vertice> list, Vertice v) {
+	    for (Vertice existing : list) {
+	        if (Math.abs(existing.x - v.x) < 1e-6 && 
+	            Math.abs(existing.y - v.y) < 1e-6) {
+	            return true;
+	        }
+	    }
+	    return false;
 	}
 
 	private boolean isSuperTriangleVertex(double x, double y) {
@@ -326,12 +372,9 @@ public class Triangulacao {
 
 		// Arrays for working points, vertices, and triangles
 		ArrayList<Ponto> arrPontos = new ArrayList<>(arrPontosList);
-		Vertice[] arrVertices = new Vertice[10000];
-		Vertice[] temparrVertices = new Vertice[25000];
-		Triangulo[] arrTriangulos = new Triangulo[20000];
+		
+		ArrayList<Triangulo> arrTriangulosList = new ArrayList<>();
 
-		int i = 0, j = 0, k = 0, l=0, n=0;
-		int numerovertices = 0;
 		int numeroPontosTotal = 0;
 		int numeroPontosContorno;
 
@@ -340,172 +383,182 @@ public class Triangulacao {
 		this.arrpolygono = new ArrayList<>();
 		this.arrVetorLinha = new ArrayList<>();
 
-		// Point proximity flag for mesh refinement
-		boolean pontoProximo = false;
 		numeroPontosContorno = numeroPontosAtual - 3;
 
 		// Generate grid points for the mesh, avoiding points too close to contour
 		// Geração de pontos de malha:
-		for (i = 0; i < 40; i++) {
-		    for (j = 0; j < 30; j++) {
-		        pontoProximo = false;
-		        for (k = 3; k < numeroPontosContorno; k++) {
-		            if (Math.sqrt(Math.pow(5 + 20 * i - arrPontos.get(k).x, 2) 
-		                + Math.pow(5 + 20 * j - arrPontos.get(k).y, 2)) < 10) {
-		                pontoProximo = true;
+		
+		// Parâmetros de refinamento
+		final double RAIO_INFLUENCIA = 100;   // Raio total da área refinada
+		final double ESPACAMENTO_MIN = 5;     // Menor espaçamento (próximo ao ponto)
+		final double FATOR_EXPANSAO = 1.5;    // Fator de aumento do espaçamento
+		final int CAMADAS = 5;                // Número de camadas concêntricas
+
+		// Lista de pontos que receberão refinamento (excluindo super triângulo)
+		ArrayList<Ponto> pontosRefinamento = new ArrayList<>();
+		for (int idx = 3; idx < numeroPontosContorno; idx++) {
+		    pontosRefinamento.add(arrPontos.get(idx));
+		}
+
+		// Gerar pontos com refinamento circular
+		for (Ponto pontoRef : pontosRefinamento) {
+		    double espacamentoAtual = ESPACAMENTO_MIN;
+		    double raioAtual = espacamentoAtual;
+		    
+		    while (raioAtual < RAIO_INFLUENCIA) {
+		        // Calcular número de pontos nesta camada
+		        int pontosNaCamada = (int) (2 * Math.PI * raioAtual / espacamentoAtual);
+		        if (pontosNaCamada < 8) pontosNaCamada = 8;  // Mínimo de pontos por camada
+		        
+		        // Gerar pontos na camada atual
+		        for (int i = 0; i < pontosNaCamada; i++) {
+		            double angulo = 2 * Math.PI * i / pontosNaCamada;
+		            double x = pontoRef.x + raioAtual * Math.cos(angulo);
+		            double y = pontoRef.y + raioAtual * Math.sin(angulo);
+		            
+		            // Verificar se o ponto é válido (dentro da área e não muito próximo)
+		            boolean pontoValido = true;
+		            for (Ponto existente : arrPontos) {
+		                double distX = x - existente.x;
+		                double distY = y - existente.y;
+		                if (distX * distX + distY * distY < espacamentoAtual * espacamentoAtual) {
+		                    pontoValido = false;
+		                    break;
+		                }
+		            }
+		            
+		            // Adicionar ponto válido
+		            if (pontoValido) {
+		                arrPontos.add(new Ponto(x, y));
+		                numeroPontosAtual++;
 		            }
 		        }
+		        
+		        // Preparar próxima camada
+		        espacamentoAtual *= FATOR_EXPANSAO;
+		        raioAtual += espacamentoAtual;
+		    }
+		}
+
+		// Gerar pontos para o resto da área (malha mais grossa)
+		final double ESPACAMENTO_GROSSO = 40;
+		for (int i = 0; i < 40; i++) {
+		    for (int j = 0; j < 30; j++) {
+		        double x = 5 + ESPACAMENTO_GROSSO * i;
+		        double y = 5 + ESPACAMENTO_GROSSO * j;
+		        
+		        // Verificar distância aos pontos existentes
+		        boolean pontoProximo = false;		// Point proximity flag for mesh refinement
+
+		        for (Ponto existente : arrPontos) {
+		            double distX = x - existente.x;
+		            double distY = y - existente.y;
+		            if (distX * distX + distY * distY < 400) {  // 20^2 = 400
+		                pontoProximo = true;
+		                break;
+		            }
+		        }
+		        
+		        // Adicionar se não estiver próximo de outros pontos
 		        if (!pontoProximo) {
-		            arrPontos.add(new Ponto(
-		                5 + 20 * i - (Math.floor(Math.random() * 5)),
-		                5 + 20 * j - (Math.floor(Math.random() * 5))
-		            ));
+		            arrPontos.add(new Ponto(x, y));
 		            numeroPontosAtual++;
 		        }
 		    }
 		}
+		
+		
+		
+		
 		numeroPontosTotal = numeroPontosAtual;
 
 		// --- Triangulation initialization ---
 		// Create super triangle (covers all points)
-		arrTriangulos[0] = new Triangulo(
-			    arrPontos.get(0).x, arrPontos.get(0).y,
-			    arrPontos.get(1).x, arrPontos.get(1).y,
-			    arrPontos.get(2).x, arrPontos.get(2).y
-			);		int numerotriangulos = 1;
+		// Criar super triângulo
+		Triangulo superTri = new Triangulo(
+		    arrPontos.get(0).x, arrPontos.get(0).y,
+		    arrPontos.get(1).x, arrPontos.get(1).y,
+		    arrPontos.get(2).x, arrPontos.get(2).y
+		);
 
-		// Add first contour point to create three new triangles
-		arrTriangulos[1] = new Triangulo(arrTriangulos[0].x1,arrTriangulos[0].y1,arrTriangulos[0].x2,arrTriangulos[0].y2,arrPontos.get(3).x,arrPontos.get(3).y);
-		arrTriangulos[2] = new Triangulo(arrTriangulos[0].x2,arrTriangulos[0].y2,arrTriangulos[0].x3,arrTriangulos[0].y3,arrPontos.get(3).x,arrPontos.get(3).y);
-		arrTriangulos[3] = new Triangulo(arrTriangulos[0].x3,arrTriangulos[0].y3,arrTriangulos[0].x1,arrTriangulos[0].y1,arrPontos.get(3).x,arrPontos.get(3).y);
-		numerotriangulos += 3;
+		// Adicionar à lista
+		arrTriangulosList.add(superTri);
+		
+		arrTriangulosList.add(new Triangulo(
+			    superTri.x1, superTri.y1,
+			    superTri.x2, superTri.y2,
+			    arrPontos.get(3).x, arrPontos.get(3).y
+			));
 
-		int[] deletarTriangulo = new int[1000];
-		boolean achou_correspondencia = false;
+			arrTriangulosList.add(new Triangulo(
+			    superTri.x2, superTri.y2,
+			    superTri.x3, superTri.y3,
+			    arrPontos.get(3).x, arrPontos.get(3).y
+			));
 
-		k = 0;
+			arrTriangulosList.add(new Triangulo(
+			    superTri.x3, superTri.y3,
+			    superTri.x1, superTri.y1,
+			    arrPontos.get(3).x, arrPontos.get(3).y
+			));
+
 		// Main loop: add each point, updating mesh with Delaunay criterion
-		for (i = numeroPontosTotal - 1; i >= 4; i--) {// process points from last to first
-		    Ponto pontoAtual = arrPontos.get(i); 
-			// Find triangles whose circumcircle contains the new point (need to be deleted)
-			for(j= 1; j < numerotriangulos; j++) {
-				if(dentroCirculo(pontoAtual,arrTriangulos[j])) {
-					deletarTriangulo[k] = j; // mark triangle for deletion
-					k++;
-				}
-			}
-			// Collect unique boundary vertices from triangles to be deleted
-			for(j =0;j<k;j++) {
-				if(j==0) {
-					// Add all three vertices from the first triangle to be deleted
-					arrVertices[0] = new Vertice(arrTriangulos[deletarTriangulo[j]].x1,arrTriangulos[deletarTriangulo[j]].y1,pontoAtual);
-					arrVertices[1] = new Vertice(arrTriangulos[deletarTriangulo[j]].x2,arrTriangulos[deletarTriangulo[j]].y2,pontoAtual);
-					arrVertices[2] = new Vertice(arrTriangulos[deletarTriangulo[j]].x3,arrTriangulos[deletarTriangulo[j]].y3,pontoAtual);
-					numerovertices = 3;
-				}else{
-					// Only add new vertices not already in arrVertices
-					achou_correspondencia = false;
-					for(n=0;n<numerovertices;n++) {
-						if((arrTriangulos[deletarTriangulo[j]].x1==arrVertices[n].x) && (arrTriangulos[deletarTriangulo[j]].y1==arrVertices[n].y)){
-							achou_correspondencia = true;
-							break;
-						}
-					}
-					if(!achou_correspondencia) {
-						arrVertices[numerovertices] = new Vertice(arrTriangulos[deletarTriangulo[j]].x1,arrTriangulos[deletarTriangulo[j]].y1,pontoAtual);
-						++numerovertices;
-					}
-					achou_correspondencia = false;
-					for(n=0;n<numerovertices;n++) {
-						if((arrTriangulos[deletarTriangulo[j]].x2==arrVertices[n].x) && (arrTriangulos[deletarTriangulo[j]].y2==arrVertices[n].y)){
-							achou_correspondencia = true;
-							break;
-						}
-					}
-					if(!achou_correspondencia) {
-						arrVertices[numerovertices] = new Vertice(arrTriangulos[deletarTriangulo[j]].x2,arrTriangulos[deletarTriangulo[j]].y2,pontoAtual);
-						++numerovertices;
-					}
-					achou_correspondencia = false;
-					for(n=0;n<numerovertices;n++) {
-						if((arrTriangulos[deletarTriangulo[j]].x3==arrVertices[n].x) && (arrTriangulos[deletarTriangulo[j]].y3==arrVertices[n].y)){
-							achou_correspondencia = true;
-							break;
-						}
-					}
-					if(!achou_correspondencia) {
-						arrVertices[numerovertices] = new Vertice(arrTriangulos[deletarTriangulo[j]].x3,arrTriangulos[deletarTriangulo[j]].y3,pontoAtual);
-						++numerovertices;
-					}
-				}
-			}
+		for (int i = numeroPontosTotal - 1; i >= 4; i--) {
+			
+			Ponto pontoAtual = arrPontos.get(i);
+		    
+		    // 1. Identificar triângulos inválidos
+		    ArrayList<Triangulo> triangulosInvalidos = new ArrayList<>();
+		    ArrayList<Vertice> arrVerticesList = new ArrayList<>();
+		    
+		    for (Triangulo tri : arrTriangulosList) {
+		        if (dentroCirculo(pontoAtual, tri)) {
+		            triangulosInvalidos.add(tri);
+		            
+		            // Adicionar vértices (com verificação de duplicatas)
+		            Vertice v1 = new Vertice(tri.x1, tri.y1, pontoAtual);
+		            if (!verticeExists(arrVerticesList, v1)) arrVerticesList.add(v1);
+		            
+		            Vertice v2 = new Vertice(tri.x2, tri.y2, pontoAtual);
+		            if (!verticeExists(arrVerticesList, v2)) arrVerticesList.add(v2);
+		            
+		            Vertice v3 = new Vertice(tri.x3, tri.y3, pontoAtual);
+		            if (!verticeExists(arrVerticesList, v3)) arrVerticesList.add(v3);
+		        }
+		    }
 
-			// Sort boundary vertices by angle to ensure correct triangle ordering
-			double[] vetorParaSortear = new double[numerovertices];
-			for(j =0;j<numerovertices;j++) {
-				temparrVertices[j] = new Vertice(arrVertices[j].x,arrVertices[j].y);
-				temparrVertices[j].anguloParaCentro = arrVertices[j].anguloParaCentro;
-				vetorParaSortear[j]= arrVertices[j].anguloParaCentro;
-			}
-			QuickSort sortVetor = new QuickSort();
-			sortVetor.ordenarVetor(vetorParaSortear);
-
-			// Reorder arrVertices according to sorted angles
-
-			for(j = 0; j < numerovertices; j++) {
-				for(l = 0; l < numerovertices; l++) {
-					if(Math.abs(vetorParaSortear[j] - temparrVertices[l].anguloParaCentro) < 1e-9) {
-						arrVertices[j] = temparrVertices[l];
-						break; // Evitar duplicatas
-					}
-				}
-			}
-
-			// Rebuild triangles with the new point
-			if(k<numerovertices) {
-				// For each boundary edge, build a new triangle with the new point
-				for(j=0;j<k;j++) {
-					arrTriangulos[deletarTriangulo[j]] = new Triangulo(arrVertices[j].x,arrVertices[j].y,arrVertices[j+1].x,arrVertices[j+1].y,pontoAtual.x,pontoAtual.y);
-				}
-				for(j =k;j<numerovertices;j++){
-					if(j==(numerovertices-1)) {
-						arrTriangulos[numerotriangulos] = new Triangulo(arrVertices[0].x,arrVertices[0].y,arrVertices[numerovertices-1].x,arrVertices[numerovertices-1].y,pontoAtual.x,pontoAtual.y);
-					}else {
-						arrTriangulos[numerotriangulos] = new Triangulo(arrVertices[j].x,arrVertices[j].y,arrVertices[j+1].x,arrVertices[j+1].y,pontoAtual.x,pontoAtual.y);
-					}
-					numerotriangulos += 1;
-				}
-			}
-			else {      
-				for(j=0;j<k-1;j++) {
-					arrTriangulos[deletarTriangulo[j]] = new Triangulo(arrVertices[j].x,arrVertices[j].y,arrVertices[j+1].x,arrVertices[j+1].y,pontoAtual.x,pontoAtual.y);
-				}
-			}
-
-			numerovertices=0;
-			k=0;
+		    // 2. Remover triângulos inválidos
+		    arrTriangulosList.removeAll(triangulosInvalidos);
+		    
+		    // 3. Ordenar vértices angularmente
+		    Collections.sort(arrVerticesList, Comparator.comparingDouble(v -> v.anguloParaCentro));
+		    
+		    // 4. Criar novos triângulos (conexão circular)
+		    int numVertices = arrVerticesList.size();
+		    for (int j = 0; j < numVertices; j++) {
+		        int next = (j + 1) % numVertices; // Próximo vértice (volta ao início)
+		        
+		        Triangulo novoTri = new Triangulo(
+		            arrVerticesList.get(j).x, arrVerticesList.get(j).y,
+		            arrVerticesList.get(next).x, arrVerticesList.get(next).y,
+		            pontoAtual.x, pontoAtual.y
+		        );
+		        
+		        arrTriangulosList.add(novoTri);
+		    }
+					
+		}
+		
+		// Filtragem final - remover triângulos com vértices do super triângulo
+		for (Triangulo tri : arrTriangulosList) {
+		    if (!isSuperTriangleVertex(tri.x1, tri.y1) &&
+		        !isSuperTriangleVertex(tri.x2, tri.y2) &&
+		        !isSuperTriangleVertex(tri.x3, tri.y3)) {
+		        
+		        arrTriangulosNorm.add(tri);
+		    }
 		}
 
-		// Filter out triangles that include super triangle vertices
-		numeroTriangulosNorm = 0;
-
-		for(j = 0; j < numerotriangulos; j++) {
-			// Verifica se o triângulo contém algum vértice do triângulo super
-			boolean hasSuperVertex = 
-					isSuperTriangleVertex(arrTriangulos[j].x1, arrTriangulos[j].y1) ||
-					isSuperTriangleVertex(arrTriangulos[j].x2, arrTriangulos[j].y2) ||
-					isSuperTriangleVertex(arrTriangulos[j].x3, arrTriangulos[j].y3);
-
-			// Só inclui se NÃO tiver nenhum vértice do triângulo super
-			if (!hasSuperVertex) {
-				Triangulo tri = new Triangulo(
-						arrTriangulos[j].x1, arrTriangulos[j].y1,
-						arrTriangulos[j].x2, arrTriangulos[j].y2,
-						arrTriangulos[j].x3, arrTriangulos[j].y3
-						);
-				arrTriangulosNorm.add(tri);
-			}
-		}
 		numeroTriangulosNorm = arrTriangulosNorm.size();
 
 
@@ -516,7 +569,7 @@ public class Triangulacao {
 		// --- FEM Preparation ---
 		// Prepare points for field calculation
 		ArrayList<Ponto> arrPontosNorm = new ArrayList<>();
-		for (i = 3; i < numeroPontosTotal; i++) {
+		for (int i = 3; i < numeroPontosTotal; i++) {
 			Ponto pontoAtual = arrPontos.get(i);
 			if(pontoAtual.pontoContorno) {
 				arrPontosNorm.add(new Ponto(pontoAtual.x, pontoAtual.y, pontoAtual.valorT));
@@ -530,7 +583,7 @@ public class Triangulacao {
 		double[][] r = new double[numeroTriangulosNorm][3];
 		double[] D = new double[numeroTriangulosNorm];
 
-		for (i =0;i<numeroTriangulosNorm;i++)
+		for (int i =0;i<numeroTriangulosNorm;i++)
 		{
 			q[i][0] = arrTriangulosNorm.get(i).y2  - arrTriangulosNorm.get(i).y3; // y2-y3
 			q[i][1] = arrTriangulosNorm.get(i).y3 - arrTriangulosNorm.get(i).y1; // y3-y1
@@ -547,9 +600,9 @@ public class Triangulacao {
 		double[][][] C = new double[numeroTriangulosNorm][3][3];
 		for(int elemento = 0;elemento<numeroTriangulosNorm;elemento++)
 		{
-			for(i=0;i<=2;i++)
+			for(int i=0;i<=2;i++)
 			{
-				for(j=0;j<=2;j++)
+				for(int j=0;j<=2;j++)
 				{
 					C[elemento][i][j]=1*(q[elemento][i]*q[elemento][j]+r[elemento][i]*r[elemento][j])/(2*D[elemento]);
 				}
@@ -557,9 +610,9 @@ public class Triangulacao {
 		}
 		numeroPontosTotal=numeroPontosTotal-3;
 		double[][] Cglobal = new double[numeroPontosTotal][numeroPontosTotal];
-		for(i=0;i<numeroPontosTotal;i++)
+		for(int i=0;i<numeroPontosTotal;i++)
 		{
-			for(j=0;j<numeroPontosTotal;j++)
+			for(int j=0;j<numeroPontosTotal;j++)
 			{
 				Cglobal[i][j]=0;
 			}
@@ -568,12 +621,12 @@ public class Triangulacao {
 		// Build connectivity matrix for assembling the global matrix
 		ArrayList<int[]> matrizdeconectividade = new ArrayList<>();
 
-		for(j = 0; j < numeroTriangulosNorm; j++) {
+		for(int j = 0; j < numeroTriangulosNorm; j++) {
 		    int[] conectividade = new int[4];
 		    matrizdeconectividade.add(conectividade);
 
 			matrizdeconectividade.get(j)[3] = 1;
-			for(i = 0; i < numeroPontosTotal; i++) {
+			for(int i = 0; i < numeroPontosTotal; i++) {
 				if(pontosIguais(arrTriangulosNorm.get(j).x1, arrTriangulosNorm.get(j).y1, arrPontosNorm.get(i).x, arrPontosNorm.get(i).y)) {
 					matrizdeconectividade.get(j)[0] = i;
 				}
@@ -587,7 +640,7 @@ public class Triangulacao {
 		}
 
 		// Assemble element matrices into the global matrix
-		for(i=0;i<numeroTriangulosNorm;i++)
+		for(int i=0;i<numeroTriangulosNorm;i++)
 		{
 			Cglobal[matrizdeconectividade.get(i)[0]][matrizdeconectividade.get(i)[0]] += C[i][0][0] ;
 			Cglobal[matrizdeconectividade.get(i)[1]][matrizdeconectividade.get(i)[1]] += C[i][1][1] ;
@@ -604,14 +657,14 @@ public class Triangulacao {
 
 		// Apply boundary conditions
 		double[] tensao = new double[numeroPontosTotal];
-		for(i=0;i<numeroPontosTotal;i++)
+		for(int i=0;i<numeroPontosTotal;i++)
 		{
 			tensao[i]=0;
 			if(arrPontosNorm.get(i).pontoContorno == true)
 			{
 				tensao[i]=arrPontosNorm.get(i).valorT;
 				Cglobal[i][i]=1;
-				for(j=0;j<numeroPontosTotal;j++)
+				for(int j=0;j<numeroPontosTotal;j++)
 				{
 					if(i!=j)
 						Cglobal[i][j]=0;
@@ -623,9 +676,9 @@ public class Triangulacao {
 		double  d=0;
 		double[][] inverse = new double[numeroPontosTotal][numeroPontosTotal];
 		double[][] Teste= new double[numeroPontosTotal][numeroPontosTotal];
-		for(i=0;i<numeroPontosTotal;i++)
+		for(int i=0;i<numeroPontosTotal;i++)
 		{
-			for(j=0;j<numeroPontosTotal;j++)
+			for(int j=0;j<numeroPontosTotal;j++)
 			{
 				Teste[i][j]=Cglobal[i][j];
 			}
@@ -641,10 +694,10 @@ public class Triangulacao {
 
 		double[] produtomatriz= new double[numeroPontosTotal];
 
-		for(i=0;i<numeroPontosTotal;i++)
+		for(int i=0;i<numeroPontosTotal;i++)
 		{
 			produtomatriz[i] =0;
-			for(j=0;j<numeroPontosTotal;j++)
+			for(int j=0;j<numeroPontosTotal;j++)
 			{
 				produtomatriz[i] += inverse[i][j]*tensao[j];
 			}
@@ -653,7 +706,7 @@ public class Triangulacao {
 		// Compute field (e.g., electric field) for each triangle
 		System.out.println("Campo Elétrico nos elementos:");
 		E = new double[numeroTriangulosNorm][2]; // Cada elemento é double[2]
-		for(i=0;i<numeroTriangulosNorm;i++)
+		for(int i=0;i<numeroTriangulosNorm;i++)
 		{
 			E[i][0]=-(q[i][0]*produtomatriz[matrizdeconectividade.get(i)[0]]+q[i][1]*produtomatriz[matrizdeconectividade.get(i)[1]]+q[i][2]*produtomatriz[matrizdeconectividade.get(i)[2]])/D[i];
 			E[i][1]=-(r[i][0]*produtomatriz[matrizdeconectividade.get(i)[0]]+r[i][1]*produtomatriz[matrizdeconectividade.get(i)[1]]+r[i][2]*produtomatriz[matrizdeconectividade.get(i)[2]])/D[i];
