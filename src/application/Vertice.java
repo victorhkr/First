@@ -1,7 +1,6 @@
 package application;
 
 public class Vertice {
-	final double PI = 3.14159265359;
 
 	double x;
 	double y;
@@ -10,23 +9,25 @@ public class Vertice {
 		
 		this.x = x;
 		this.y = y;
-		anguloParaCentro =( Math.atan((-centro.y+this.y)/ (-centro.x+this.x)))*180/PI;
-		if((-centro.x+this.x) > 0 && anguloParaCentro<0) {
-			anguloParaCentro = anguloParaCentro + 360;
-		}else if((-centro.x+this.x) < 0 && anguloParaCentro<0) {
-			anguloParaCentro = anguloParaCentro+180;
-		}else if((-centro.x+this.x) < 0 && anguloParaCentro>0) {
-			anguloParaCentro = 180 + anguloParaCentro;
-		}
-		if((-centro.x+this.x) == 0 && anguloParaCentro<0) {
-			anguloParaCentro = 360 + anguloParaCentro;
-		}
-		if((-centro.y+this.y) == 0 && (-centro.x+this.x) > 0 ) {
-			anguloParaCentro = 0;
-		}
-		if((-centro.y+this.y) == 0 && (-centro.x+this.x) < 0 ) {
-			anguloParaCentro = 180;
-		}
+		
+	    double dx = x - centro.x;
+	    double dy = y - centro.y;
+	    
+	    //Trate caso onde o ponto é o próprio centro
+	    	
+	    if (dx == 0 && dy == 0) {
+	        this.anguloParaCentro = 0; // ou um valor padrão
+	        return; // encerra o cálculo
+	    }
+	    
+	    // Calcula ângulo em radianos e converte para graus
+        double anguloGraus = Math.toDegrees(Math.atan2(dy, dx));
+	    
+	    // Ajusta para [0, 360)
+	    if (anguloGraus < 0) {
+	        anguloGraus += 360;
+	    }
+	    this.anguloParaCentro = anguloGraus;
 		//System.out.println("o angulo é " + anguloParaCentro);
 		//System.out.println(-centro.x+this.x);
 		//System.out.println(-centro.y+this.y);
