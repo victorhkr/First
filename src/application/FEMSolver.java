@@ -103,6 +103,7 @@ public class FEMSolver {
 
         // Resolver sistema linear (substituir por método eficiente)
         double[][] solucao;
+        
         try {
             // Substitua por: MatrixOperations.solveLinearSystem(Cglobal, tensao);
             solucao = new double[][]{MatrixOperations.solve(Cglobal, tensao)}; // Ilustrativo
