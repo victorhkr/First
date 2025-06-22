@@ -85,7 +85,7 @@ public class EletroEF extends Application {
 		btn1.setMaxWidth(Double.MAX_VALUE);
 		btn1.setOnAction(arg0 -> {
 			// Remove previous triangulation if any
-			System.out.println("hello world motherfucker");
+			System.out.println("Iniciando a triangulação para o cálculo dos elementos finitos.");
 			if(triangulacaoObj!=null) {
 				Triangulacao.deletartriangulos(drawingPane, triangulacaoObj.arrpolygono);
 				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, drawingPane);
@@ -203,12 +203,9 @@ public class EletroEF extends Application {
 		// --- Drawing initialization --- //
 		// The first 3 points are initialized for the triangulation base
         // Adicionar os pontos iniciais
-		//arrPontos.add(new Ponto(100, 100));    // Ponto dentro da área visível
-	    //arrPontos.add(new Ponto(300, 100));    // Ponto dentro da área visível
-	    //arrPontos.add(new Ponto(100, 300));    // Ponto dentro da área visível
+   
 	    
-	    
-	 // Adicionar os pontos iniciais
+		// Adicionar os pontos iniciais
         arrPontos.add(new Ponto(0,0));
         arrPontos.add(new Ponto(2000,0));
         arrPontos.add(new Ponto(0,2000));

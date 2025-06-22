@@ -704,15 +704,15 @@ public class Triangulacao {
 		}
 
 		// Compute field (e.g., electric field) for each triangle
-		System.out.println("Campo Elétrico nos elementos:");
+		System.out.println("Iniciando o cálculo do campo elétrico nos elementos.");
 		E = new double[numeroTriangulosNorm][2]; // Cada elemento é double[2]
 		for(int i=0;i<numeroTriangulosNorm;i++)
 		{
 			E[i][0]=-(q[i][0]*produtomatriz[matrizdeconectividade.get(i)[0]]+q[i][1]*produtomatriz[matrizdeconectividade.get(i)[1]]+q[i][2]*produtomatriz[matrizdeconectividade.get(i)[2]])/D[i];
 			E[i][1]=-(r[i][0]*produtomatriz[matrizdeconectividade.get(i)[0]]+r[i][1]*produtomatriz[matrizdeconectividade.get(i)[1]]+r[i][2]*produtomatriz[matrizdeconectividade.get(i)[2]])/D[i];
-			System.out.print("Elemento " + i + ":\tEx:\t" + E[i][0] + "\tEy:\t" + E[i][1] + "\n");
+			//System.out.print("Elemento " + i + ":\tEx:\t" + E[i][0] + "\tEy:\t" + E[i][1] + "\n");
 		}
-		System.out.println("fim");
+		System.out.println("Finalizado.");
 
 		// Optionally draw vectors on screen
 		if(checkbox1.isSelected())
