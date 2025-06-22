@@ -56,22 +56,25 @@ public class EletroEF extends Application {
 		final double PI = 3.14159265358979323846;
 
 		// Main layout: BorderPane with drawing area center and controls on right
-	    // Sistema de camadas
-	    StackPane rootStack = new StackPane();
+		// Sistema de camadas
 	    BorderPane rootPane = new BorderPane();  // Contêiner principal
 	    Pane drawingPane = new Pane();           // Camada de desenho FEM
 
-	    rootStack.getChildren().add(rootPane);   // Adiciona o BorderPane principal ao StackPane
-	    Scene scene = new Scene(rootStack, 1000, 600);
-	    
-	    // Área de desenho (fundo)
-	    Rectangle areaDesenho = new Rectangle(0, 0, 800, 600);
-	    areaDesenho.setFill(Color.GREY);
-	    drawingPane.getChildren().add(areaDesenho);
-	    
-	    // Configura área de desenho no centro do BorderPane
+	    // Configura área de desenho com fundo cinza
+	    drawingPane.setStyle("-fx-background-color: grey;");
 	    rootPane.setCenter(drawingPane);
-
+	    
+	    // Recorte para evitar que desenhos ultrapassem os limites
+	    Rectangle clip = new Rectangle();
+	    clip.widthProperty().bind(drawingPane.widthProperty());
+	    clip.heightProperty().bind(drawingPane.heightProperty());
+	    drawingPane.setClip(clip);
+	    
+	    Scene scene = new Scene(rootPane, 1000, 600);  // Cria a cena com o BorderPane principal
+	    //para garantir que o drawingPane se expanda corretamente
+	    drawingPane.prefWidthProperty().bind(scene.widthProperty().subtract(300));
+	    drawingPane.prefHeightProperty().bind(scene.heightProperty());
+	    
 		// --- Controls VBox setup --- //
 		VBox controls = new VBox(10);
 		controls.setPadding(new Insets(10));
@@ -145,12 +148,13 @@ public class EletroEF extends Application {
 		    "• Para simular aterramento, use 0\n" +
 		    "• Para eletrodos carregados, use valores positivos"
 		);
+		
+		
+		// Point value input in Volts
+		tf1 = new TextField("200");
 		Tooltip.install(tf1, tooltipTensao);
 		Tooltip.install(labelTensao, tooltipTensao);
 		
-		// Point value input
-		tf1 = new TextField("200");
-
 		// Add controls to VBox
 		controls.getChildren().addAll(
 			    btn1, btn2, btn3,
@@ -199,9 +203,17 @@ public class EletroEF extends Application {
 		// --- Drawing initialization --- //
 		// The first 3 points are initialized for the triangulation base
         // Adicionar os pontos iniciais
+		//arrPontos.add(new Ponto(100, 100));    // Ponto dentro da área visível
+	    //arrPontos.add(new Ponto(300, 100));    // Ponto dentro da área visível
+	    //arrPontos.add(new Ponto(100, 300));    // Ponto dentro da área visível
+	    
+	    
+	 // Adicionar os pontos iniciais
         arrPontos.add(new Ponto(0,0));
         arrPontos.add(new Ponto(2000,0));
         arrPontos.add(new Ponto(0,2000));
+        
+        
 		numeroPontosAtual = 3;
 
         // Adicionar círculos visuais para os pontos iniciais
@@ -216,7 +228,7 @@ public class EletroEF extends Application {
 		// --- Mouse event handlers for adding points/lines/circles --- //
 
 		// Add single point at click
-        areaDesenho.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
+        drawingPane.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
             if(checkbox3.isSelected()) {
                 Circle circle = new Circle(mouseEvent.getX(), mouseEvent.getY(), 2);
                 circle.setFill(Color.RED);
@@ -236,7 +248,7 @@ public class EletroEF extends Application {
         });
 
 		// Store start of line/circle for mouse drag
-		areaDesenho.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
+        drawingPane.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
 			if(checkbox4.isSelected()||checkbox5.isSelected()){
 				System.out.println("mouse click detected! " + mouseEvent.getX()+" "+ mouseEvent.getY());
 				inicio_linha_x =  mouseEvent.getX();
@@ -250,7 +262,7 @@ public class EletroEF extends Application {
 		});
 
 		// On mouse release, add line or circle of points
-		areaDesenho.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseEvent -> {
+        drawingPane.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseEvent -> {
 			double x, y, dist;
 			double n = 0;
 			x = mouseEvent.getX()-inicio_linha_x;
@@ -331,7 +343,7 @@ public class EletroEF extends Application {
 		});
 
 		// SCENE PAN: Move everything when not in drawing mode
-		areaDesenho.addEventFilter(MouseEvent.MOUSE_DRAGGED, mouseEvent -> {
+        drawingPane.addEventFilter(MouseEvent.MOUSE_DRAGGED, mouseEvent -> {
 			if(!checkbox3.isSelected() && !checkbox4.isSelected() && !checkbox5.isSelected()) {
 				double dx = mouseEvent.getX() - lastDragX;
 				double dy = mouseEvent.getY() - lastDragY;
