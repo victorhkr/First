@@ -3,15 +3,11 @@ package application;
 import java.util.ArrayList;
 
 import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.scene.Group;  
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;  
 import javafx.stage.Stage;
-import quicksortpckg.QuickSort;  
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -22,16 +18,15 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Circle;  
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.collections.ObservableList;
 
 public class EletroEF extends Application {
 
-	// Triangulation object for current state
-	Triangulacao triangulacaoObj;
+	// Triangulation manager for current state
+    TriangulationManager triangulationManager;
+    
 	// UI controls
 	CheckBox checkbox1; // Draw field vectors
 	CheckBox checkbox2; // Draw triangles
@@ -86,12 +81,13 @@ public class EletroEF extends Application {
 		btn1.setOnAction(arg0 -> {
 			// Remove previous triangulation if any
 			System.out.println("Iniciando a triangulação para o cálculo dos elementos finitos.");
-			if(triangulacaoObj!=null) {
-				Triangulacao.deletartriangulos(drawingPane, triangulacaoObj.arrpolygono);
-				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, drawingPane);
+			if(triangulationManager!=null) {
+				MeshDrawer.deletarTriangulos(drawingPane, triangulationManager.arrpolygono);
+                MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
 			}
 			// Create new triangulation object
-			triangulacaoObj = new Triangulacao(drawingPane, arrPontos, numeroPontosAtual, checkbox1, checkbox2);
+            triangulationManager = new TriangulationManager(drawingPane, arrPontos, numeroPontosAtual, checkbox1, checkbox2);
+
 		});
 
 		// Button: Delete all points except initial 3
@@ -104,11 +100,11 @@ public class EletroEF extends Application {
                 arrCircle.remove(i);
                 arrPontos.remove(i);
             }
-			if(triangulacaoObj!=null) {
-				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, drawingPane);
-				Triangulacao.deletartriangulos(drawingPane, triangulacaoObj.arrpolygono);
+			if(triangulationManager!=null) {
+				MeshDrawer.deletarTriangulos(drawingPane, triangulationManager.arrpolygono);
+                MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
 			}
-			triangulacaoObj = null;
+			triangulationManager = null;
 			numeroPontosAtual=3;
 		});
 
@@ -122,7 +118,7 @@ public class EletroEF extends Application {
                 arrPontos.remove(arrPontos.size() - 1);
                 numeroPontosAtual--;
             }
-			triangulacaoObj = null;
+            triangulationManager = null;
 		});
 
 		// Field vector and triangle display toggles
@@ -172,18 +168,18 @@ public class EletroEF extends Application {
 
 		// Toggle display of field vectors
 		checkbox1.setOnAction(arg0 -> {
-			if ((checkbox1.isSelected())&&(triangulacaoObj!=null)){
-				Triangulacao.desenharVetores(triangulacaoObj.arrTriangulosNorm, triangulacaoObj.E, triangulacaoObj.arrVetorLinha, drawingPane);
-			} else if((!checkbox1.isSelected())&&(triangulacaoObj!=null)){
-				Triangulacao.deletarVetores(triangulacaoObj.arrVetorLinha, drawingPane);
+			if ((checkbox1.isSelected())&&(triangulationManager!=null)){
+                MeshDrawer.desenharVetores(triangulationManager.arrTriangulosNorm, triangulationManager.E, triangulationManager.arrVetorLinha, drawingPane);
+			} else if((!checkbox1.isSelected())&&(triangulationManager!=null)){
+                MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
 			}
 		});
 		// Toggle display of triangles
 		checkbox2.setOnAction(arg0 -> {
-			if ((checkbox2.isSelected())&&(triangulacaoObj!=null)) {
-				Triangulacao.desenhartriangulos(triangulacaoObj.arrTriangulosNorm, drawingPane, triangulacaoObj.arrpolygono);
-			}else if((!checkbox2.isSelected())&&(triangulacaoObj!=null)) {
-				Triangulacao.deletartriangulos(drawingPane, triangulacaoObj.arrpolygono);
+			if ((checkbox2.isSelected())&&(triangulationManager!=null)) {
+                MeshDrawer.desenharTriangulos(triangulationManager.arrTriangulosNorm, drawingPane, triangulationManager.arrpolygono);
+			}else if((!checkbox2.isSelected())&&(triangulationManager!=null)) {
+                MeshDrawer.deletarTriangulos(drawingPane, triangulationManager.arrpolygono);
 			}
 		});
 		// Mutually exclusive checkboxes for drawing modes
@@ -357,9 +353,9 @@ public class EletroEF extends Application {
 	            }
 
 				// Move triangulation polygons (triangles)
-				if (triangulacaoObj != null && triangulacaoObj.arrpolygono != null) {
-					for (int i = 0; i < triangulacaoObj.numeroTriangulosNorm; i++) {
-						Polygon poly = triangulacaoObj.arrpolygono.get(i);
+				if (triangulationManager != null && triangulationManager.arrpolygono != null) {
+					for (int i = 0; i < triangulationManager.numeroTriangulosNorm; i++) {
+						Polygon poly = triangulationManager.arrpolygono.get(i);
 						if (poly != null) {
 							ObservableList<Double> points = poly.getPoints();
 							for (int j = 0; j < points.size(); j += 2) {
@@ -371,9 +367,9 @@ public class EletroEF extends Application {
 				}
 
 				// Move field vector lines
-				if (triangulacaoObj != null && triangulacaoObj.arrVetorLinha != null) {
-		            for (int i = 0; i < triangulacaoObj.arrVetorLinha.size(); i++) {
-		                Line[] innerArray = triangulacaoObj.arrVetorLinha.get(i); // CORREÇÃO: .get(i)
+				if (triangulationManager != null && triangulationManager.arrVetorLinha != null) {
+		            for (int i = 0; i < triangulationManager.arrVetorLinha.size(); i++) {
+		                Line[] innerArray = triangulationManager.arrVetorLinha.get(i); // CORREÇÃO: .get(i)
 		                if (innerArray != null) {
 		                    for (int j = 0; j < innerArray.length; j++) {
 		                        Line vec = innerArray[j];
@@ -392,7 +388,7 @@ public class EletroEF extends Application {
 				lastDragY = mouseEvent.getY();
 			}
 			// Após mover os pontos no arraste, deletar a triangulação para forçar uma nova:
-			triangulacaoObj = null;
+			triangulationManager = null;
 		}
 		);
 
