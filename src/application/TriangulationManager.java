@@ -1,7 +1,9 @@
 package application;
 
-import java.util.ArrayList;
 import javafx.scene.layout.Pane;
+
+import java.util.ArrayList;
+
 import javafx.scene.control.CheckBox;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Line;
@@ -17,29 +19,20 @@ public class TriangulationManager {
         // 1. Mesh refinement
         ArrayList<Ponto> arrPontos = MeshRefiner.refineMesh(arrPontosList, numeroPontosAtual);
 
-        // 2. Delaunay triangulation
+        // 2. Delaunay triangulation (já filtra pontos do super-triângulo)
         arrTriangulosNorm = DelaunayTriangulator.triangulate(arrPontos, arrPontos.size());
         numeroTriangulosNorm = arrTriangulosNorm.size();
 
-        // 3. Optionally draw triangles
-        if (checkbox2.isSelected())
-            MeshDrawer.desenharTriangulos(arrTriangulosNorm, root, arrpolygono);
+        // 3. Usar TODOS os pontos (já refinados) para o FEM
+        ArrayList<Ponto> arrPontosNorm = new ArrayList<>(arrPontos); // Não remova pontos!
 
-        // 4. Prepare FEM nodes (skip super triangle and contour logic)
-        ArrayList<Ponto> arrPontosNorm = new ArrayList<>();
-        for (int i = 3; i < arrPontos.size(); i++) {
-            Ponto pontoAtual = arrPontos.get(i);
-            if (pontoAtual.pontoContorno) {
-                arrPontosNorm.add(new Ponto(pontoAtual.x, pontoAtual.y, pontoAtual.valorT));
-            } else {
-                arrPontosNorm.add(new Ponto(pontoAtual.x, pontoAtual.y));
-            }
-        }
-
-        // 5. Solve FEM
+        // 4. Solve FEM
         E = FEMSolver.solve(arrTriangulosNorm, arrPontosNorm);
 
-        // 6. Optionally draw field vectors
+        if (checkbox2.isSelected())
+        	MeshDrawer.desenharTriangulos(arrTriangulosNorm, root, arrpolygono);
+
+        // 5. Optionally draw field vectors
         if (checkbox1.isSelected())
             MeshDrawer.desenharVetores(arrTriangulosNorm, E, arrVetorLinha, root);
     }

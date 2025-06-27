@@ -37,7 +37,7 @@ public class Triangulo {
 
     // Constant for pi
     final double PI = Math.PI;
-
+    
     /**
      * Calculates the angle between the centroid and a point (x, y) in degrees.
      * Used for sorting triangle vertices in a consistent order.

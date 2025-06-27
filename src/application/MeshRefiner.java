@@ -4,17 +4,22 @@ import java.util.ArrayList;
 
 public class MeshRefiner {
     public static ArrayList<Ponto> refineMesh(ArrayList<Ponto> arrPontos, int numeroPontosAtual) {
-        ArrayList<Ponto> arrPontosRefinados = new ArrayList<>(arrPontos);
+        ArrayList<Ponto> arrPontosRefinados = new ArrayList<>();
+        
+        // Preservar todos os pontos originais (incluindo propriedades)
+        for (Ponto ponto : arrPontos) {
+            arrPontosRefinados.add(new Ponto(ponto));
+        }
+        
         int numeroPontosContorno = numeroPontosAtual - 3;
 
         final double RAIO_INFLUENCIA = 100;
-        final double ESPACAMENTO_MIN = 10;
+        final double ESPACAMENTO_MIN = 20;
         final double FATOR_EXPANSAO = 1.8;
-        final int CAMADAS = 5;
 
         ArrayList<Ponto> pontosRefinamento = new ArrayList<>();
         for (int idx = 3; idx < numeroPontosContorno+3; idx++) {
-            pontosRefinamento.add(arrPontosRefinados.get(idx));
+            pontosRefinamento.add(arrPontos.get(idx));
         }
 
         for (Ponto pontoRef : pontosRefinamento) {
@@ -37,6 +42,7 @@ public class MeshRefiner {
                         }
                     }
                     if (pontoValido) {
+                        // Novos pontos não são de contorno
                         arrPontosRefinados.add(new Ponto(x, y));
                     }
                 }
@@ -59,6 +65,7 @@ public class MeshRefiner {
                     }
                 }
                 if (!pontoProximo) {
+                    // Pontos adicionais não são de contorno
                     arrPontosRefinados.add(new Ponto(x, y));
                 }
             }

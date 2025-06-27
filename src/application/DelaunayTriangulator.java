@@ -1,113 +1,203 @@
 package application;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DelaunayTriangulator {
-    public static boolean dentroCirculo(Ponto a, Triangulo b) {
-    	double dx = b.xc - a.x;
-    	double dy = b.yc - a.y;
-    	return dx*dx + dy*dy <= b.r*b.r;    
+    private static final double EPSILON = 1.0 / 1048576.0;
+
+    private static class Edge {
+        final int a, b;
+        Edge(int a, int b) {
+            this.a = Math.min(a, b);
+            this.b = Math.max(a, b);
+        }
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Edge)) return false;
+            Edge edge = (Edge) o;
+            return a == edge.a && b == edge.b;
+        }
+        @Override
+        public int hashCode() {
+            return 31 * a + b;
+        }
     }
 
-    public static boolean pontosIguais(double x1, double y1, double x2, double y2) {
-        final double EPSILON = 1e-6;
-        return Math.abs(x1 - x2) < EPSILON && Math.abs(y1 - y2) < EPSILON;
+    private static class TriangleData {
+        final int i, j, k;
+        final double x, y, r;
+        TriangleData(int i, int j, int k, double x, double y, double r) {
+            this.i = i; this.j = j; this.k = k;
+            this.x = x; this.y = y; this.r = r;
+        }
     }
 
-    private static boolean verticeExists(ArrayList<Vertice> list, Vertice v) {
-        for (Vertice existing : list) {
-            if (Math.abs(existing.x - v.x) < 1e-6 &&
-                Math.abs(existing.y - v.y) < 1e-6) {
-                return true;
+    private static List<Ponto> supertriangle(List<Ponto> vertices) {
+        double xmin = Double.POSITIVE_INFINITY;
+        double ymin = Double.POSITIVE_INFINITY;
+        double xmax = Double.NEGATIVE_INFINITY;
+        double ymax = Double.NEGATIVE_INFINITY;
+
+        for (Ponto v : vertices) {
+            if (v.x < xmin) xmin = v.x;
+            if (v.x > xmax) xmax = v.x;
+            if (v.y < ymin) ymin = v.y;
+            if (v.y > ymax) ymax = v.y;
+        }
+
+        double dx = xmax - xmin;
+        double dy = ymax - ymin;
+        double dmax = Math.max(dx, dy);
+        double xmid = xmin + dx * 0.5;
+        double ymid = ymin + dy * 0.5;
+
+        List<Ponto> st = new ArrayList<>();
+        st.add(new Ponto(xmid - 20 * dmax, ymid - dmax));
+        st.add(new Ponto(xmid, ymid + 20 * dmax));
+        st.add(new Ponto(xmid + 20 * dmax, ymid - dmax));
+        return st;
+    }
+
+    private static TriangleData circumcircle(List<Ponto> vertices, int i, int j, int k) {
+        double x1 = vertices.get(i).x;
+        double y1 = vertices.get(i).y;
+        double x2 = vertices.get(j).x;
+        double y2 = vertices.get(j).y;
+        double x3 = vertices.get(k).x;
+        double y3 = vertices.get(k).y;
+
+        double fabsy1y2 = Math.abs(y1 - y2);
+        double fabsy2y3 = Math.abs(y2 - y3);
+
+        if (fabsy1y2 < EPSILON && fabsy2y3 < EPSILON) {
+            throw new RuntimeException("Coincident points");
+        }
+
+        double xc, yc;
+
+        if (fabsy1y2 < EPSILON) {
+            double m2 = -((x3 - x2) / (y3 - y2));
+            double mx2 = (x2 + x3) / 2.0;
+            double my2 = (y2 + y3) / 2.0;
+            xc = (x2 + x1) / 2.0;
+            yc = m2 * (xc - mx2) + my2;
+        } else if (fabsy2y3 < EPSILON) {
+            double m1 = -((x2 - x1) / (y2 - y1));
+            double mx1 = (x1 + x2) / 2.0;
+            double my1 = (y1 + y2) / 2.0;
+            xc = (x3 + x2) / 2.0;
+            yc = m1 * (xc - mx1) + my1;
+        } else {
+            double m1 = -((x2 - x1) / (y2 - y1));
+            double m2 = -((x3 - x2) / (y3 - y2));
+            double mx1 = (x1 + x2) / 2.0;
+            double mx2 = (x2 + x3) / 2.0;
+            double my1 = (y1 + y2) / 2.0;
+            double my2 = (y2 + y3) / 2.0;
+            xc = (m1 * mx1 - m2 * mx2 + my2 - my1) / (m1 - m2);
+            yc = (fabsy1y2 > fabsy2y3) ? 
+                  m1 * (xc - mx1) + my1 : 
+                  m2 * (xc - mx2) + my2;
+        }
+
+        double dx = x2 - xc;
+        double dy = y2 - yc;
+        double r = dx * dx + dy * dy;
+
+        return new TriangleData(i, j, k, xc, yc, r);
+    }
+
+    private static void dedup(ArrayList<Integer> edges) {
+        Map<Edge, Integer> counts = new HashMap<>();
+        for (int i = 0; i < edges.size(); i += 2) {
+            int a = edges.get(i);
+            int b = edges.get(i + 1);
+            Edge edge = new Edge(a, b);
+            counts.put(edge, counts.getOrDefault(edge, 0) + 1);
+        }
+
+        edges.clear();
+        for (Map.Entry<Edge, Integer> entry : counts.entrySet()) {
+            if (entry.getValue() == 1) {
+                edges.add(entry.getKey().a);
+                edges.add(entry.getKey().b);
             }
         }
-        return false;
-    }
-
-    private static boolean isSuperTriangleVertex(double x, double y) {
-        final double EPSILON = 1e-6;
-        if (Math.abs(x - 0) < EPSILON && Math.abs(y - 0) < EPSILON) return true;
-        if (Math.abs(x - 0) < EPSILON && Math.abs(y - 2000) < EPSILON) return true;
-        if (Math.abs(x - 2000) < EPSILON && Math.abs(y - 0) < EPSILON) return true;
-        return false;
     }
 
     public static ArrayList<Triangulo> triangulate(ArrayList<Ponto> arrPontos, int numeroPontosAtual) {
-        ArrayList<Triangulo> arrTriangulosList = new ArrayList<>();
+        int n = arrPontos.size();
+        if (n < 3) return new ArrayList<>();
 
-        int numeroPontosTotal = arrPontos.size();
+        List<Ponto> vertices = new ArrayList<>(arrPontos);
+        List<Ponto> st = supertriangle(vertices);
+        vertices.addAll(st);
+        
+        Integer[] indices = new Integer[n];
+        for (int i = 0; i < n; i++) indices[i] = i;
+        
+        Arrays.sort(indices, (i, j) -> {
+            double diff = vertices.get(j).x - vertices.get(i).x;
+            return (diff != 0) ? (int) Math.signum(diff) : i - j;
+        });
 
-        // Super triangle
-        Triangulo superTri = new Triangulo(
-            arrPontos.get(0).x, arrPontos.get(0).y,
-            arrPontos.get(1).x, arrPontos.get(1).y,
-            arrPontos.get(2).x, arrPontos.get(2).y
-        );
+        ArrayList<TriangleData> open = new ArrayList<>();
+        open.add(circumcircle(vertices, n, n + 1, n + 2));
+        
+        ArrayList<TriangleData> closed = new ArrayList<>();
+        ArrayList<Integer> edges = new ArrayList<>();
 
-        arrTriangulosList.add(superTri);
-        arrTriangulosList.add(new Triangulo(
-            superTri.x1, superTri.y1,
-            superTri.x2, superTri.y2,
-            arrPontos.get(3).x, arrPontos.get(3).y
-        ));
-        arrTriangulosList.add(new Triangulo(
-            superTri.x2, superTri.y2,
-            superTri.x3, superTri.y3,
-            arrPontos.get(3).x, arrPontos.get(3).y
-        ));
-        arrTriangulosList.add(new Triangulo(
-            superTri.x3, superTri.y3,
-            superTri.x1, superTri.y1,
-            arrPontos.get(3).x, arrPontos.get(3).y
-        ));
+        for (int i = 0; i < indices.length; i++) {
+            int c = indices[i];
+            edges.clear();
 
-        for (int i = numeroPontosTotal - 1; i >= 4; i--) {
-            Ponto pontoAtual = arrPontos.get(i);
-
-            ArrayList<Triangulo> triangulosInvalidos = new ArrayList<>();
-            ArrayList<Vertice> arrVerticesList = new ArrayList<>();
-
-            for (Triangulo tri : arrTriangulosList) {
-                if (dentroCirculo(pontoAtual, tri)) {
-                    triangulosInvalidos.add(tri);
-
-                    Vertice v1 = new Vertice(tri.x1, tri.y1, pontoAtual);
-                    if (!verticeExists(arrVerticesList, v1)) arrVerticesList.add(v1);
-
-                    Vertice v2 = new Vertice(tri.x2, tri.y2, pontoAtual);
-                    if (!verticeExists(arrVerticesList, v2)) arrVerticesList.add(v2);
-
-                    Vertice v3 = new Vertice(tri.x3, tri.y3, pontoAtual);
-                    if (!verticeExists(arrVerticesList, v3)) arrVerticesList.add(v3);
+            for (int j = open.size() - 1; j >= 0; j--) {
+                TriangleData t = open.get(j);
+                double dx = vertices.get(c).x - t.x;
+                
+                if (dx > 0 && dx * dx > t.r) {
+                    closed.add(t);
+                    open.remove(j);
+                    continue;
                 }
+                
+                double dy = vertices.get(c).y - t.y;
+                if (dx * dx + dy * dy - t.r > EPSILON) {
+                    continue;
+                }
+                
+                edges.add(t.i); edges.add(t.j);
+                edges.add(t.j); edges.add(t.k);
+                edges.add(t.k); edges.add(t.i);
+                open.remove(j);
             }
-
-            arrTriangulosList.removeAll(triangulosInvalidos);
-
-            Collections.sort(arrVerticesList, Comparator.comparingDouble(v -> v.anguloParaCentro));
-
-            int numVertices = arrVerticesList.size();
-            for (int j = 0; j < numVertices; j++) {
-                int next = (j + 1) % numVertices;
-                Triangulo novoTri = new Triangulo(
-                    arrVerticesList.get(j).x, arrVerticesList.get(j).y,
-                    arrVerticesList.get(next).x, arrVerticesList.get(next).y,
-                    pontoAtual.x, pontoAtual.y
-                );
-                arrTriangulosList.add(novoTri);
-            }
-        }
-
-        ArrayList<Triangulo> arrTriangulosNorm = new ArrayList<>();
-        for (Triangulo tri : arrTriangulosList) {
-            if (!isSuperTriangleVertex(tri.x1, tri.y1) &&
-                !isSuperTriangleVertex(tri.x2, tri.y2) &&
-                !isSuperTriangleVertex(tri.x3, tri.y3)) {
-                arrTriangulosNorm.add(tri);
+            
+            dedup(edges);
+            
+            for (int e = 0; e < edges.size(); e += 2) {
+                open.add(circumcircle(vertices, edges.get(e), edges.get(e + 1), c));
             }
         }
-        return arrTriangulosNorm;
+        
+        closed.addAll(open);
+        ArrayList<Triangulo> result = new ArrayList<>();
+        for (TriangleData t : closed) {
+            // Apenas triângulos cujos índices estão no intervalo [0, n-1]
+            if (t.i < n && t.j < n && t.k < n) {
+                Ponto p1 = vertices.get(t.i);
+                Ponto p2 = vertices.get(t.j);
+                Ponto p3 = vertices.get(t.k);
+                result.add(new Triangulo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y));
+            }
+        }
+        
+        return result;
     }
 }

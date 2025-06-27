@@ -6,6 +6,18 @@ import java.util.Map;
 
 public class FEMSolver {
 
+    // Método auxiliar para busca tolerante
+    private static int findPointIndex(ArrayList<Ponto> points, double x, double y) {
+        final double TOL = 1e-4;
+        for (int i = 0; i < points.size(); i++) {
+            Ponto p = points.get(i);
+            if (Math.abs(p.x - x) < TOL && Math.abs(p.y - y) < TOL) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
     public static double[][] solve(ArrayList<Triangulo> arrTriangulosNorm, ArrayList<Ponto> arrPontosNorm) {
         int numeroTriangulosNorm = arrTriangulosNorm.size();
         int numeroPontosTotal = arrPontosNorm.size();
@@ -53,20 +65,44 @@ public class FEMSolver {
         // Matriz global de rigidez (n x n)
         double[][] Cglobal = new double[numeroPontosTotal][numeroPontosTotal]; // Inicializada com zeros
 
-        // Mapa para indexação eficiente dos pontos (evita O(n^2))
+     // Mapa tolerante para indexação
         Map<String, Integer> pontoParaIndice = new HashMap<>();
         for (int i = 0; i < numeroPontosTotal; i++) {
             Ponto p = arrPontosNorm.get(i);
-            pontoParaIndice.put(p.x + "," + p.y, i);
+            String chave = String.format("%.4f,%.4f", p.x, p.y);
+            pontoParaIndice.put(chave, i);
         }
 
-        // Matriz de conectividade: índice global dos vértices de cada triângulo
+        // Matriz de conectividade com tolerância
         int[][] matrizConectividade = new int[numeroTriangulosNorm][3];
         for (int j = 0; j < numeroTriangulosNorm; j++) {
             Triangulo tri = arrTriangulosNorm.get(j);
-            matrizConectividade[j][0] = pontoParaIndice.get(tri.x1 + "," + tri.y1);
-            matrizConectividade[j][1] = pontoParaIndice.get(tri.x2 + "," + tri.y2);
-            matrizConectividade[j][2] = pontoParaIndice.get(tri.x3 + "," + tri.y3);
+            
+            // Gerar chaves com mesma precisão
+            String chave1 = String.format("%.4f,%.4f", tri.x1, tri.y1);
+            String chave2 = String.format("%.4f,%.4f", tri.x2, tri.y2);
+            String chave3 = String.format("%.4f,%.4f", tri.x3, tri.y3);
+            
+            // Busca tolerante
+            Integer idx1 = pontoParaIndice.get(chave1);
+            Integer idx2 = pontoParaIndice.get(chave2);
+            Integer idx3 = pontoParaIndice.get(chave3);
+            
+            if (idx1 == null || idx2 == null || idx3 == null) {
+                // Fallback: busca linear tolerante
+                idx1 = findPointIndex(arrPontosNorm, tri.x1, tri.y1);
+                idx2 = findPointIndex(arrPontosNorm, tri.x2, tri.y2);
+                idx3 = findPointIndex(arrPontosNorm, tri.x3, tri.y3);
+                
+                if (idx1 == -1 || idx2 == -1 || idx3 == -1) {
+                    throw new IllegalStateException("Ponto do triângulo não encontrado: " +
+                            chave1 + " | " + chave2 + " | " + chave3);
+                }
+            }
+            
+            matrizConectividade[j][0] = idx1;
+            matrizConectividade[j][1] = idx2;
+            matrizConectividade[j][2] = idx3;
         }
 
         // Montagem da matriz global
