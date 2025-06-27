@@ -8,12 +8,12 @@ public class MeshRefiner {
         int numeroPontosContorno = numeroPontosAtual - 3;
 
         final double RAIO_INFLUENCIA = 100;
-        final double ESPACAMENTO_MIN = 5;
-        final double FATOR_EXPANSAO = 1.5;
+        final double ESPACAMENTO_MIN = 10;
+        final double FATOR_EXPANSAO = 1.8;
         final int CAMADAS = 5;
 
         ArrayList<Ponto> pontosRefinamento = new ArrayList<>();
-        for (int idx = 3; idx < numeroPontosContorno; idx++) {
+        for (int idx = 3; idx < numeroPontosContorno+3; idx++) {
             pontosRefinamento.add(arrPontosRefinados.get(idx));
         }
 
@@ -40,8 +40,7 @@ public class MeshRefiner {
                         arrPontosRefinados.add(new Ponto(x, y));
                     }
                 }
-                espacamentoAtual *= FATOR_EXPANSAO;
-                raioAtual += espacamentoAtual;
+                raioAtual = raioAtual * FATOR_EXPANSAO;
             }
         }
 

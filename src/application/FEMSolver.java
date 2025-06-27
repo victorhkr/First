@@ -43,7 +43,9 @@ public class FEMSolver {
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     // Fórmula da matriz de rigidez: (q_i*q_j + r_i*r_j) / (2 * |Área|)
-                    C[elemento][i][j] = (q[elemento][i] * q[elemento][j] + r[elemento][i] * r[elemento][j]) / (2 * D[elemento]);
+                	double area = Math.abs(D[elemento]);
+
+                    C[elemento][i][j] = (q[elemento][i] * q[elemento][j] + r[elemento][i] * r[elemento][j]) / (2 * area);
                 }
             }
         }
@@ -89,45 +91,65 @@ public class FEMSolver {
             Cglobal[idx0][idx2] += C[i][2][0]; // Simetria
         }
 
-        // Vetor de cargas (condições de contorno)
-        double[] tensao = new double[numeroPontosTotal]; // Inicializado com zeros
+     // Passo 1: Identificar nós de contorno
+        boolean[] isBoundary = new boolean[numeroPontosTotal];
+        double[] boundaryValues = new double[numeroPontosTotal];
         for (int i = 0; i < numeroPontosTotal; i++) {
             if (arrPontosNorm.get(i).pontoContorno) {
-                tensao[i] = arrPontosNorm.get(i).valorT;
-                // Modificar linha da matriz para condição de contorno
+                isBoundary[i] = true;
+                boundaryValues[i] = arrPontosNorm.get(i).valorT;
+            }
+        }
+
+        // Passo 2: Construir o vetor b ajustado
+        double[] b = new double[numeroPontosTotal];
+        for (int i = 0; i < numeroPontosTotal; i++) {
+            if (isBoundary[i]) {
+                b[i] = boundaryValues[i]; // Valor fixo no contorno
+            } else {
+                // Subtrai contribuições dos nós de contorno
+                b[i] = 0; // RHS original é 0 (sem fontes)
                 for (int j = 0; j < numeroPontosTotal; j++) {
-                    Cglobal[i][j] = (i == j) ? 1.0 : 0.0;
+                    if (isBoundary[j]) {
+                        b[i] -= Cglobal[i][j] * boundaryValues[j];
+                    }
                 }
             }
         }
 
-        // Resolver sistema linear (substituir por método eficiente)
-        double[][] solucao;
-        
-        try {
-            // Substitua por: MatrixOperations.solveLinearSystem(Cglobal, tensao);
-            solucao = new double[][]{MatrixOperations.solve(Cglobal, tensao)}; // Ilustrativo
-        } catch (Exception e) {
-            System.err.println("Erro na resolução do sistema: " + e.getMessage());
-            return null;
+        // Passo 3: Modificar a matriz para nós de contorno
+        for (int i = 0; i < numeroPontosTotal; i++) {
+            if (isBoundary[i]) {
+                for (int j = 0; j < numeroPontosTotal; j++) {
+                    if (i == j) {
+                        Cglobal[i][j] = 1; // Diagonal = 1
+                    } else {
+                        Cglobal[i][j] = 0; // Fora da diagonal = 0
+                    }
+                }
+            }
         }
 
+        // Passo 4: Resolver o sistema
+        double[] solucao = MatrixOperations.solve(Cglobal, b); // Usa o vetor b corrigido
+        
         // Calcular gradiente (campo elétrico) em cada elemento
         double[][] campoEletrico = new double[numeroTriangulosNorm][2];
         for (int i = 0; i < numeroTriangulosNorm; i++) {
             int idx0 = matrizConectividade[i][0];
             int idx1 = matrizConectividade[i][1];
             int idx2 = matrizConectividade[i][2];
-            
+        	double area = Math.abs(D[i]);
+
             // Gradiente em x: -Σ(q_k * u_k)/D
-            campoEletrico[i][0] = -(q[i][0] * solucao[0][idx0] 
-                                 + q[i][1] * solucao[0][idx1] 
-                                 + q[i][2] * solucao[0][idx2]) / D[i];
+            campoEletrico[i][0] = -(q[i][0] * solucao[idx0] 
+                                 + q[i][1] * solucao[idx1] 
+                                 + q[i][2] * solucao[idx2]) / area;
             
             // Gradiente em y: -Σ(r_k * u_k)/D
-            campoEletrico[i][1] = -(r[i][0] * solucao[0][idx0] 
-                                 + r[i][1] * solucao[0][idx1] 
-                                 + r[i][2] * solucao[0][idx2]) / D[i];
+            campoEletrico[i][1] = -(r[i][0] * solucao[idx0] 
+                                 + r[i][1] * solucao[idx1] 
+                                 + r[i][2] * solucao[idx2]) / area;
         }
         
         return campoEletrico;

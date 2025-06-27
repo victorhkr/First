@@ -6,7 +6,9 @@ import java.util.Comparator;
 
 public class DelaunayTriangulator {
     public static boolean dentroCirculo(Ponto a, Triangulo b) {
-        return Math.sqrt(Math.pow(b.xc - a.x, 2) + Math.pow(b.yc - a.y, 2)) <= b.r;
+    	double dx = b.xc - a.x;
+    	double dy = b.yc - a.y;
+    	return dx*dx + dy*dy <= b.r*b.r;    
     }
 
     public static boolean pontosIguais(double x1, double y1, double x2, double y2) {
