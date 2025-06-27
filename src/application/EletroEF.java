@@ -242,14 +242,15 @@ public class EletroEF extends Application {
 		// Store start of line/circle for mouse drag
         drawingPane.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
 			if(checkbox4.isSelected()||checkbox5.isSelected()){
-				System.out.println("mouse click detected! " + mouseEvent.getX()+" "+ mouseEvent.getY());
 				inicio_linha_x =  mouseEvent.getX();
 				inicio_linha_y =  mouseEvent.getY();
+
 			}
 			// SCENE PAN: Store initial position if not in any drawing mode
 			if(!checkbox3.isSelected() && !checkbox4.isSelected() && !checkbox5.isSelected()) {
 				lastDragX = mouseEvent.getX();
 				lastDragY = mouseEvent.getY();
+
 			}
 		});
 
@@ -257,6 +258,10 @@ public class EletroEF extends Application {
         drawingPane.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseEvent -> {
 			double x, y, dist;
 			double n = 0;
+			
+			System.out.print("Added Object: Begin X:" + inicio_linha_x +" Y:"+ inicio_linha_y);
+			System.out.println(" End X:" + mouseEvent.getX() +" Y:"+ mouseEvent.getY());
+
 			x = mouseEvent.getX()-inicio_linha_x;
 			y = mouseEvent.getY()-inicio_linha_y;
 			dist = Math.sqrt(Math.pow(x, 2)+Math.pow(y, 2));
