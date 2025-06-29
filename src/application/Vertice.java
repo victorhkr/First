@@ -29,9 +29,6 @@ public class Vertice {
 	    }
 	    this.anguloParaCentro = anguloGraus;
 		//System.out.println("o angulo é " + anguloParaCentro);
-		//System.out.println(-centro.x+this.x);
-		//System.out.println(-centro.y+this.y);
-		
 
 		// TODO Auto-generated constructor stub
 	}

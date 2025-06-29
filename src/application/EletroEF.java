@@ -24,22 +24,23 @@ import javafx.collections.ObservableList;
 public class EletroEF extends Application {
 
 	// Triangulation manager for current state
-    TriangulationManager triangulationManager;
-    
+	TriangulationManager triangulationManager;
+
 	// UI controls
 	CheckBox checkbox1; // Draw field vectors
 	CheckBox checkbox2; // Draw triangles
 	TextField tf1;      // Text field for point value input
+	
 	// Arrays for points and their graphical representations
-	  ArrayList<Ponto> arrPontos = new ArrayList<>();
-	    ArrayList<Circle> arrCircle = new ArrayList<>();
+	ArrayList<Ponto> arrPontos = new ArrayList<>();
+	ArrayList<Circle> arrCircle = new ArrayList<>();
+	
 	int i=0;
 	int numeroPontosAtual=0; // Number of points currently on screen
 
 	// Variables for mouse drawing logic
 	double inicio_linha_x = 0;
 	double inicio_linha_y = 0;
-	boolean existeTriangulacao = false; // Not used, but intended to track triangulation state
 
 	// Fields for dragging the whole scene
 	double lastDragX = 0;
@@ -51,24 +52,24 @@ public class EletroEF extends Application {
 
 		// Main layout: BorderPane with drawing area center and controls on right
 		// Sistema de camadas
-	    BorderPane rootPane = new BorderPane();  // Contêiner principal
-	    Pane drawingPane = new Pane();           // Camada de desenho FEM
+		BorderPane rootPane = new BorderPane();  // Contêiner principal
+		Pane drawingPane = new Pane();           // Camada de desenho FEM
 
-	    // Configura área de desenho com fundo cinza
-	    drawingPane.setStyle("-fx-background-color: grey;");
-	    rootPane.setCenter(drawingPane);
-	    
-	    // Recorte para evitar que desenhos ultrapassem os limites
-	    Rectangle clip = new Rectangle();
-	    clip.widthProperty().bind(drawingPane.widthProperty());
-	    clip.heightProperty().bind(drawingPane.heightProperty());
-	    drawingPane.setClip(clip);
-	    
-	    Scene scene = new Scene(rootPane, 1000, 600);  // Cria a cena com o BorderPane principal
-	    //para garantir que o drawingPane se expanda corretamente
-	    drawingPane.prefWidthProperty().bind(scene.widthProperty().subtract(300));
-	    drawingPane.prefHeightProperty().bind(scene.heightProperty());
-	    
+		// Configura área de desenho com fundo cinza
+		drawingPane.setStyle("-fx-background-color: grey;");
+		rootPane.setCenter(drawingPane);
+
+		// Recorte para evitar que desenhos ultrapassem os limites
+		Rectangle clip = new Rectangle();
+		clip.widthProperty().bind(drawingPane.widthProperty());
+		clip.heightProperty().bind(drawingPane.heightProperty());
+		drawingPane.setClip(clip);
+
+		Scene scene = new Scene(rootPane, 1000, 600);  // Cria a cena com o BorderPane principal
+		//para garantir que o drawingPane se expanda corretamente
+		drawingPane.prefWidthProperty().bind(scene.widthProperty().subtract(300));
+		drawingPane.prefHeightProperty().bind(scene.heightProperty());
+
 		// --- Controls VBox setup --- //
 		VBox controls = new VBox(10);
 		controls.setPadding(new Insets(10));
@@ -82,10 +83,10 @@ public class EletroEF extends Application {
 			System.out.println("Iniciando a triangulação para o cálculo dos elementos finitos.");
 			if(triangulationManager!=null) {
 				MeshDrawer.deletarTriangulos(drawingPane, triangulationManager.arrpolygono);
-                MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
+				MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
 			}
 			// Create new triangulation object
-            triangulationManager = new TriangulationManager(drawingPane, arrPontos, numeroPontosAtual, checkbox1, checkbox2);
+			triangulationManager = new TriangulationManager(drawingPane, arrPontos, numeroPontosAtual, checkbox1, checkbox2);
 
 		});
 
@@ -94,14 +95,14 @@ public class EletroEF extends Application {
 		btn2.setMaxWidth(Double.MAX_VALUE);
 		btn2.setOnAction(arg0 -> {
 			// Remover círculos visuais (exceto os 3 iniciais)
-            for(i = arrCircle.size() - 1; i >= 3; i--) {
-                drawingPane.getChildren().remove(arrCircle.get(i));
-                arrCircle.remove(i);
-                arrPontos.remove(i);
-            }
+			for(i = arrCircle.size() - 1; i >= 3; i--) {
+				drawingPane.getChildren().remove(arrCircle.get(i));
+				arrCircle.remove(i);
+				arrPontos.remove(i);
+			}
 			if(triangulationManager!=null) {
 				MeshDrawer.deletarTriangulos(drawingPane, triangulationManager.arrpolygono);
-                MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
+				MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
 			}
 			triangulationManager = null;
 			numeroPontosAtual=3;
@@ -111,13 +112,13 @@ public class EletroEF extends Application {
 		Button btn3 = new Button("Delete last point");
 		btn3.setMaxWidth(Double.MAX_VALUE);
 		btn3.setOnAction(arg0 -> {
-            if(arrPontos.size() > 3) {
-                drawingPane.getChildren().remove(arrCircle.get(arrCircle.size() - 1));
-                arrCircle.remove(arrCircle.size() - 1);
-                arrPontos.remove(arrPontos.size() - 1);
-                numeroPontosAtual--;
-            }
-            triangulationManager = null;
+			if(arrPontos.size() > 3) {
+				drawingPane.getChildren().remove(arrCircle.get(arrCircle.size() - 1));
+				arrCircle.remove(arrCircle.size() - 1);
+				arrPontos.remove(arrPontos.size() - 1);
+				numeroPontosAtual--;
+			}
+			triangulationManager = null;
 		});
 
 		// Field vector and triangle display toggles
@@ -138,47 +139,47 @@ public class EletroEF extends Application {
 
 		// Dica de ferramenta com explicação detalhada
 		Tooltip tooltipTensao = new Tooltip(
-		    "Define o valor do potencial elétrico para novos pontos de contorno\n\n" +
-		    "• Valor padrão: 200 V\n" +
-		    "• Para simular aterramento, use 0\n" +
-		    "• Para eletrodos carregados, use valores positivos"
-		);
-		
-		
+				"Define o valor do potencial elétrico para novos pontos de contorno\n\n" +
+						"• Valor padrão: 200 V\n" +
+						"• Para simular aterramento, use 0\n" +
+						"• Para eletrodos carregados, use valores positivos"
+				);
+
+
 		// Point value input in Volts
 		tf1 = new TextField("200");
 		Tooltip.install(tf1, tooltipTensao);
 		Tooltip.install(labelTensao, tooltipTensao);
-		
+
 		// Add controls to VBox
 		controls.getChildren().addAll(
-			    btn1, btn2, btn3,
-			    new Label("\nEscolha o que vai ser desenhado"),  // Separador
-			    checkbox1, checkbox2, 
-			    new Label("\nModos de Adição de Pontos:"),  // Separador
-			    checkbox3, checkbox4, checkbox5,
-			    new Label(" "),  // Espaçamento
-			    labelTensao,     // Nova label explicativa
-			    tf1              // Caixa de texto existente
-			);
-	    rootPane.setRight(controls);
+				btn1, btn2, btn3,
+				new Label("\nEscolha o que vai ser desenhado"),  // Separador
+				checkbox1, checkbox2, 
+				new Label("\nModos de Adição de Pontos:"),  // Separador
+				checkbox3, checkbox4, checkbox5,
+				new Label(" "),  // Espaçamento
+				labelTensao,     // Nova label explicativa
+				tf1              // Caixa de texto existente
+				);
+		rootPane.setRight(controls);
 
 		// --- Controls event handlers --- //
 
 		// Toggle display of field vectors
 		checkbox1.setOnAction(arg0 -> {
 			if ((checkbox1.isSelected())&&(triangulationManager!=null)){
-                MeshDrawer.desenharVetores(triangulationManager.arrTriangulosNorm, triangulationManager.E, triangulationManager.arrVetorLinha, drawingPane);
+				MeshDrawer.desenharVetores(triangulationManager.arrTriangulosNorm, triangulationManager.E, triangulationManager.arrVetorLinha, drawingPane);
 			} else if((!checkbox1.isSelected())&&(triangulationManager!=null)){
-                MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
+				MeshDrawer.deletarVetores(triangulationManager.arrVetorLinha, drawingPane);
 			}
 		});
 		// Toggle display of triangles
 		checkbox2.setOnAction(arg0 -> {
 			if ((checkbox2.isSelected())&&(triangulationManager!=null)) {
-                MeshDrawer.desenharTriangulos(triangulationManager.arrTriangulosNorm, drawingPane, triangulationManager.arrpolygono);
+				MeshDrawer.desenharTriangulos(triangulationManager.arrTriangulosNorm, drawingPane, triangulationManager.arrpolygono);
 			}else if((!checkbox2.isSelected())&&(triangulationManager!=null)) {
-                MeshDrawer.deletarTriangulos(drawingPane, triangulationManager.arrpolygono);
+				MeshDrawer.deletarTriangulos(drawingPane, triangulationManager.arrpolygono);
 			}
 		});
 		// Mutually exclusive checkboxes for drawing modes
@@ -197,50 +198,50 @@ public class EletroEF extends Application {
 
 		// --- Drawing initialization --- //
 		// The first 3 points are initialized for the triangulation base
-        // Adicionar os pontos iniciais
-   
-	    
 		// Adicionar os pontos iniciais
-        arrPontos.add(new Ponto(0,0));
-        arrPontos.add(new Ponto(2000,0));
-        arrPontos.add(new Ponto(0,2000));
-        
-        
+
+
+		// Adicionar os pontos iniciais
+		arrPontos.add(new Ponto(0,0));
+		arrPontos.add(new Ponto(2000,0));
+		arrPontos.add(new Ponto(0,2000));
+
+
 		numeroPontosAtual = 3;
 
-        // Adicionar círculos visuais para os pontos iniciais
-        for(Ponto ponto : arrPontos) {
-            Circle circle = new Circle(ponto.x, ponto.y, 2);
-            circle.setFill(Color.RED);
-            drawingPane.getChildren().add(circle);
-            arrCircle.add(circle);
-        }
-        numeroPontosAtual = 3;
-        
+		// Adicionar círculos visuais para os pontos iniciais
+		for(Ponto ponto : arrPontos) {
+			Circle circle = new Circle(ponto.x, ponto.y, 2);
+			circle.setFill(Color.RED);
+			drawingPane.getChildren().add(circle);
+			arrCircle.add(circle);
+		}
+		numeroPontosAtual = 3;
+
 		// --- Mouse event handlers for adding points/lines/circles --- //
 
 		// Add single point at click
-        drawingPane.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
-            if(checkbox3.isSelected()) {
-                Circle circle = new Circle(mouseEvent.getX(), mouseEvent.getY(), 2);
-                circle.setFill(Color.RED);
-                drawingPane.getChildren().add(circle);
-                arrCircle.add(circle);
-                
-                int valorT;
-                try {
-                    valorT = Integer.parseInt(tf1.getText());
-                } catch (NumberFormatException e) {
-                    valorT = 200; // Valor padrão
-                }
-                
-                arrPontos.add(new Ponto(mouseEvent.getX(), mouseEvent.getY(), valorT));
-                numeroPontosAtual++;
-            }
-        });
+		drawingPane.addEventFilter(MouseEvent.MOUSE_CLICKED, mouseEvent -> {
+			if(checkbox3.isSelected()) {
+				Circle circle = new Circle(mouseEvent.getX(), mouseEvent.getY(), 2);
+				circle.setFill(Color.RED);
+				drawingPane.getChildren().add(circle);
+				arrCircle.add(circle);
+
+				int valorT;
+				try {
+					valorT = Integer.parseInt(tf1.getText());
+				} catch (NumberFormatException e) {
+					valorT = 200; // Valor padrão
+				}
+
+				arrPontos.add(new Ponto(mouseEvent.getX(), mouseEvent.getY(), valorT));
+				numeroPontosAtual++;
+			}
+		});
 
 		// Store start of line/circle for mouse drag
-        drawingPane.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
+		drawingPane.addEventFilter(MouseEvent.MOUSE_PRESSED, mouseEvent -> {
 			if(checkbox4.isSelected()||checkbox5.isSelected()){
 				inicio_linha_x =  mouseEvent.getX();
 				inicio_linha_y =  mouseEvent.getY();
@@ -255,10 +256,10 @@ public class EletroEF extends Application {
 		});
 
 		// On mouse release, add line or circle of points
-        drawingPane.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseEvent -> {
+		drawingPane.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseEvent -> {
 			double x, y, dist;
 			double n = 0;
-			
+
 			System.out.print("Added Object: Begin X:" + inicio_linha_x +" Y:"+ inicio_linha_y);
 			System.out.println(" End X:" + mouseEvent.getX() +" Y:"+ mouseEvent.getY());
 
@@ -268,93 +269,93 @@ public class EletroEF extends Application {
 
 			// Add line of points
 			if(checkbox4.isSelected()){
-			    x = mouseEvent.getX()-inicio_linha_x;
-			    y = mouseEvent.getY()-inicio_linha_y;
-			    dist = Math.sqrt(Math.pow(x, 2)+Math.pow(y, 2));
-			    
-			    if (dist < 1e-6) {
-			        return; // Clique sem movimento
-			    }
-			    else {
-			        x = x/dist; // Normalização X
-			        y = y/dist; // Normalização Y
-			    }
-			    
-			    int numPontosLinha = (int)(dist/5); // Calcular quantidade de pontos
-			    
-			    for(int i = 0; i < numPontosLinha; i++){
-			        // Calcular posição do ponto
-			        double pointX = inicio_linha_x + 5 * i * x;
-			        double pointY = inicio_linha_y + 5 * i * y;
-			        
-			        // Criar círculo visual
-			        Circle circle = new Circle(pointX, pointY, 2);
-			        circle.setFill(Color.RED);
-			        drawingPane.getChildren().add(circle);
-			        arrCircle.add(circle);
-			        
-			        // Obter valor do campo com tratamento de erro
-			        int valorT;
-			        try {
-			            valorT = Integer.parseInt(tf1.getText());
-			        } catch (NumberFormatException e) {
-			            valorT = 200; // Valor padrão
-			        }
-			        
-			        // Adicionar ponto ao modelo
-			        arrPontos.add(new Ponto(pointX, pointY, valorT));
-			        numeroPontosAtual++;
-			    }
+				x = mouseEvent.getX()-inicio_linha_x;
+				y = mouseEvent.getY()-inicio_linha_y;
+				dist = Math.sqrt(Math.pow(x, 2)+Math.pow(y, 2));
+
+				if (dist < 1e-6) {
+					return; // Clique sem movimento
+				}
+				else {
+					x = x/dist; // Normalização X
+					y = y/dist; // Normalização Y
+				}
+
+				int numPontosLinha = (int)(dist/5); // Calcular quantidade de pontos
+
+				for(int i = 0; i < numPontosLinha; i++){
+					// Calcular posição do ponto
+					double pointX = inicio_linha_x + 5 * i * x;
+					double pointY = inicio_linha_y + 5 * i * y;
+
+					// Criar círculo visual
+					Circle circle = new Circle(pointX, pointY, 2);
+					circle.setFill(Color.RED);
+					drawingPane.getChildren().add(circle);
+					arrCircle.add(circle);
+
+					// Obter valor do campo com tratamento de erro
+					int valorT;
+					try {
+						valorT = Integer.parseInt(tf1.getText());
+					} catch (NumberFormatException e) {
+						valorT = 200; // Valor padrão
+					}
+
+					// Adicionar ponto ao modelo
+					arrPontos.add(new Ponto(pointX, pointY, valorT));
+					numeroPontosAtual++;
+				}
 			}
 
 			// Add circle of points
 			if(checkbox5.isSelected()){
-			    double raio = dist; // Distância do centro ao ponto de soltura = raio
-			    double perimetro = 2 * Math.PI * raio;
-			    int numPontosCirculo = (int)(perimetro / 5); // Calcular quantidade de pontos
-			    
-			    for(int i = 0; i < numPontosCirculo; i++){
-			        double angle = i * (2 * Math.PI / numPontosCirculo);
-			        double centerX = inicio_linha_x + raio * Math.cos(angle);
-			        double centerY = inicio_linha_y + raio * Math.sin(angle);
-			        
-			        // Criar círculo visual
-			        Circle circle = new Circle(centerX, centerY, 2);
-			        circle.setFill(Color.RED);
-			        drawingPane.getChildren().add(circle);
-			        arrCircle.add(circle);
-			        
-			        // Obter valor do campo com tratamento de erro
-			        int valorT;
-			        try {
-			            valorT = Integer.parseInt(tf1.getText());
-			        } catch (NumberFormatException e) {
-			            valorT = 200; // Valor padrão
-			        }
-			        
-			        // Adicionar ponto ao modelo
-			        arrPontos.add(new Ponto(centerX, centerY, valorT));
-			        numeroPontosAtual++;
-			    }
+				double raio = dist; // Distância do centro ao ponto de soltura = raio
+				double perimetro = 2 * Math.PI * raio;
+				int numPontosCirculo = (int)(perimetro / 5); // Calcular quantidade de pontos
+
+				for(int i = 0; i < numPontosCirculo; i++){
+					double angle = i * (2 * Math.PI / numPontosCirculo);
+					double centerX = inicio_linha_x + raio * Math.cos(angle);
+					double centerY = inicio_linha_y + raio * Math.sin(angle);
+
+					// Criar círculo visual
+					Circle circle = new Circle(centerX, centerY, 2);
+					circle.setFill(Color.RED);
+					drawingPane.getChildren().add(circle);
+					arrCircle.add(circle);
+
+					// Obter valor do campo com tratamento de erro
+					int valorT;
+					try {
+						valorT = Integer.parseInt(tf1.getText());
+					} catch (NumberFormatException e) {
+						valorT = 200; // Valor padrão
+					}
+
+					// Adicionar ponto ao modelo
+					arrPontos.add(new Ponto(centerX, centerY, valorT));
+					numeroPontosAtual++;
+				}
 			}
 		});
 
 		// SCENE PAN: Move everything when not in drawing mode
-        drawingPane.addEventFilter(MouseEvent.MOUSE_DRAGGED, mouseEvent -> {
+		drawingPane.addEventFilter(MouseEvent.MOUSE_DRAGGED, mouseEvent -> {
 			if(!checkbox3.isSelected() && !checkbox4.isSelected() && !checkbox5.isSelected()) {
 				double dx = mouseEvent.getX() - lastDragX;
 				double dy = mouseEvent.getY() - lastDragY;
 
 				// Move points and circles
-	            for (int idx = 0; idx < arrPontos.size(); idx++) {
-	                Ponto ponto = arrPontos.get(idx);
-	                Circle circle = arrCircle.get(idx);
-	                
-	                ponto.x += dx;
-	                ponto.y += dy;
-	                circle.setCenterX(circle.getCenterX() + dx);
-	                circle.setCenterY(circle.getCenterY() + dy);
-	            }
+				for (int idx = 0; idx < arrPontos.size(); idx++) {
+					Ponto ponto = arrPontos.get(idx);
+					Circle circle = arrCircle.get(idx);
+
+					ponto.x += dx;
+					ponto.y += dy;
+					circle.setCenterX(circle.getCenterX() + dx);
+					circle.setCenterY(circle.getCenterY() + dy);
+				}
 
 				// Move triangulation polygons (triangles)
 				if (triangulationManager != null && triangulationManager.arrpolygono != null) {
@@ -372,20 +373,20 @@ public class EletroEF extends Application {
 
 				// Move field vector lines
 				if (triangulationManager != null && triangulationManager.arrVetorLinha != null) {
-		            for (int i = 0; i < triangulationManager.arrVetorLinha.size(); i++) {
-		                Line[] innerArray = triangulationManager.arrVetorLinha.get(i); // CORREÇÃO: .get(i)
-		                if (innerArray != null) {
-		                    for (int j = 0; j < innerArray.length; j++) {
-		                        Line vec = innerArray[j];
-		                        if (vec != null) {
-		                            vec.setStartX(vec.getStartX() + dx);
-		                            vec.setStartY(vec.getStartY() + dy);
-		                            vec.setEndX(vec.getEndX() + dx);
-		                            vec.setEndY(vec.getEndY() + dy);
-		                        }
-		                    }
-		                }
-		            }
+					for (int i = 0; i < triangulationManager.arrVetorLinha.size(); i++) {
+						Line[] innerArray = triangulationManager.arrVetorLinha.get(i); // CORREÇÃO: .get(i)
+						if (innerArray != null) {
+							for (int j = 0; j < innerArray.length; j++) {
+								Line vec = innerArray[j];
+								if (vec != null) {
+									vec.setStartX(vec.getStartX() + dx);
+									vec.setStartY(vec.getStartY() + dy);
+									vec.setEndX(vec.getEndX() + dx);
+									vec.setEndY(vec.getEndY() + dy);
+								}
+							}
+						}
+					}
 				}
 
 				lastDragX = mouseEvent.getX();
@@ -394,7 +395,7 @@ public class EletroEF extends Application {
 			// Após mover os pontos no arraste, deletar a triangulação para forçar uma nova:
 			triangulationManager = null;
 		}
-		);
+				);
 
 		// Show the main window
 		primarystage.setScene(scene);

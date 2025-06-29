@@ -16,6 +16,7 @@ public class TriangulationManager {
     double[][] E;
 
     public TriangulationManager(Pane root, ArrayList<Ponto> arrPontosList, int numeroPontosAtual, CheckBox checkbox1, CheckBox checkbox2) {
+    	
         // 1. Mesh refinement
         ArrayList<Ponto> arrPontos = MeshRefiner.refineMesh(arrPontosList, numeroPontosAtual);
 
@@ -29,10 +30,11 @@ public class TriangulationManager {
         // 4. Solve FEM
         E = FEMSolver.solve(arrTriangulosNorm, arrPontosNorm);
 
+        // 5. Optionally draw triangles
         if (checkbox2.isSelected())
         	MeshDrawer.desenharTriangulos(arrTriangulosNorm, root, arrpolygono);
 
-        // 5. Optionally draw field vectors
+        // 6. Optionally draw field vectors
         if (checkbox1.isSelected())
             MeshDrawer.desenharVetores(arrTriangulosNorm, E, arrVetorLinha, root);
     }
